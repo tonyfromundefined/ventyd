@@ -2,7 +2,6 @@
   "name": "ventyd",
   "version": "1.0.0",
   "type": "module",
-  "main": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -10,9 +9,13 @@
       "require": "./dist/index.cjs"
     }
   },
+  "main": "./dist/index.js",
   "scripts": {
     "build": "bunchee",
     "format": "biome format --write"
+  },
+  "dependencies": {
+    "zod": "^4.1.11"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
