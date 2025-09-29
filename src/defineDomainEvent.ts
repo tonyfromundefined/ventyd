@@ -3,7 +3,7 @@ import type { ValueOf } from "./ValueOf";
 import type { ZodDomainEvent } from "./ZodDomainEvent";
 import type { ZodEmptyObject } from "./ZodEmptyObject";
 
-type toSchemaMap<
+type $$SchemaMap<
   Namespace extends string,
   BodySchemaMap extends { [key: string]: ZodEmptyObject },
 > = {
@@ -19,9 +19,9 @@ export type $$DefinedDomainEvent<
 > = {
   " $$typeof": "DefinedDomainEvent";
   " $$namespace": Namespace;
-  " $$schemaMap": toSchemaMap<Namespace, BodySchemaMap>;
+  " $$schemaMap": $$SchemaMap<Namespace, BodySchemaMap>;
   " $$schema": z.ZodDiscriminatedUnion<
-    ValueOf<toSchemaMap<Namespace, BodySchemaMap>>[],
+    ValueOf<$$SchemaMap<Namespace, BodySchemaMap>>[],
     "eventName"
   >;
 };
@@ -35,7 +35,7 @@ export function defineDomainEvent<
   namespace: Namespace,
   options: { schema: BodySchemaMap },
 ): $$DefinedDomainEvent<Namespace, BodySchemaMap> {
-  type SchemaMap = toSchemaMap<Namespace, BodySchemaMap>;
+  type SchemaMap = $$SchemaMap<Namespace, BodySchemaMap>;
   type SchemaArray = [ValueOf<SchemaMap>, ...ValueOf<SchemaMap>[]];
 
   const baseDomainEvent = z.object({
