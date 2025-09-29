@@ -1,32 +1,32 @@
 {
-	"compilerOptions": {
-		// Language and Environment
-		"target": "ESNext",
-		"lib": ["ESNext"],
+  "compilerOptions": {
+    // Language and Environment
+    "target": "ESNext",
+    "lib": ["ESNext"],
 
-		// Base module configuration
-		// You must set module option to "NodeNext" or "preserve" or "ESNext" when importing this file.
-		"moduleDetection": "force",
-		"isolatedModules": true,
-		"esModuleInterop": true,
-		"verbatimModuleSyntax": true,
-		"noUncheckedSideEffectImports": true, // Side effect only imports must be checked if the module can be resolved.
+    // Base module configuration
+    // You must set module option to "NodeNext" or "preserve" or "ESNext" when importing this file.
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "noUncheckedSideEffectImports": true, // Side effect only imports must be checked if the module can be resolved.
 
-		// Type Checking
-		"strict": true,
-		"noImplicitOverride": true,
-		"noUncheckedIndexedAccess": true,
-		"forceConsistentCasingInFileNames": true,
-		"erasableSyntaxOnly": true, // For maximum compatibility with node and other environments with typescript support based on type stripping.
-		"skipLibCheck": true,
+    // Type Checking
+    "strict": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "forceConsistentCasingInFileNames": true,
+    "erasableSyntaxOnly": true, // For maximum compatibility with node and other environments with typescript support based on type stripping.
+    "skipLibCheck": true,
 
-		// Emit
-		"declaration": true,
-		"declarationMap": true,
-		"sourceMap": true,
+    // Emit
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
 
-		// Module
-		"module": "ESNext",
-		"moduleResolution": "Bundler"
-	}
+    // Module
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  }
 }
