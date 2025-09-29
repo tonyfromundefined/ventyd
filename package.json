@@ -1,4 +1,23 @@
 {
   "name": "ventyd",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "bunchee"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
+    "@types/node": "^24.5.2",
+    "bunchee": "^6.6.0",
+    "typescript": "^5.9.2"
+  },
   "packageManager": "yarn@4.10.3"
 }
