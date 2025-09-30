@@ -13,15 +13,19 @@
   "scripts": {
     "build": "bunchee",
     "format": "biome format --write",
-    "test": "vitest run ./src"
+    "test": "vitest run ./test"
   },
   "dependencies": {
     "zod": "^4.1.11"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.5.2",
+    "better-sqlite3": "^12.4.1",
     "bunchee": "^6.6.0",
+    "mongodb": "^6.20.0",
+    "mongodb-memory-server": "^10.2.1",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
