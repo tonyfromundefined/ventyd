@@ -6,11 +6,42 @@ type InitialEventOf<Schema extends BaseSchema> = z.infer<
   Schema["eventMap"][Schema[" $$initialEventName"]]
 >;
 
+export interface IBaseEntity<Schema extends BaseSchema> {
+  // ----------------------
+  // public properties
+  // ----------------------
+  entityName: Schema[" $$entityName"];
+  entityId: string;
+  get state(): z.infer<Schema["state"]>;
+
+  // ----------------------
+  // private properties
+  // ----------------------
+  " $$state": z.infer<Schema["state"]>;
+  " $$schema": Schema;
+  " $$queuedEvents": z.infer<Schema["event"]>[];
+  " $$reducer": Reducer<Schema>;
+
+  // ----------------------
+  // public methods
+  // ----------------------
+  dispatch: <EventName extends z.infer<Schema["event"]>["eventName"]>(
+    eventName: EventName,
+    body: z.infer<Schema["eventMap"][EventName]>["body"],
+  ) => void;
+
+  // ----------------------
+  // private methods
+  // ----------------------
+  " $$flush": () => void;
+  " $$hydrate": (events: z.infer<Schema["event"]>[]) => void;
+}
+
 export function Entity<Schema extends BaseSchema>(
   schema: Schema,
   reducer: Reducer<Schema>,
 ) {
-  return class BaseEntity {
+  return class BaseEntity implements IBaseEntity<Schema> {
     // ----------------------
     // public properties
     // ----------------------

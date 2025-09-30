@@ -48,8 +48,14 @@ const repo = createRepository({
   entity: User,
   schema: userSchema,
   storage: {} as any,
+  plugins: [],
 });
-repo.findOne({ entityId: "1234" }).then((u) => u?.nickname);
+
+repo.findOne({ entityId: "1234" }).then((u) => {
+  if (u) {
+    u.nickname.toLocaleLowerCase();
+  }
+});
 
 test("Entity created successfully", () => {
   const user = new User({

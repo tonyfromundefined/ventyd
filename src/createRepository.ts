@@ -1,6 +1,7 @@
 import type z from "zod";
 import type { BaseSchema } from "./defineSchema";
 import type { Storage } from "./defineStorage";
+import type { IBaseEntity } from "./Entity";
 import type { Plugin } from "./Plugin";
 import type { ConstructorReturnType } from "./util-types";
 
@@ -9,30 +10,24 @@ export type Repository<Entity> = {
    * Finds an entity by its `entityId`.
    * @returns The entity if found, otherwise null.
    */
-  findOne: (args: {
-    entityId: string;
-  }) => Promise<ConstructorReturnType<Entity> | null>;
+  findOne: (args: { entityId: string }) => Promise<Entity | null>;
 
   /**
    * Commits an entity to the repository.
    * @param entity - The entity to commit.
    */
-  commit: (entity: ConstructorReturnType<Entity>) => Promise<void>;
+  commit: (entity: Entity) => Promise<void>;
 };
 
 export function createRepository<
   Schema extends BaseSchema,
-  Entity extends new () => {
-    " $$queuedEvents": z.infer<Schema["event"]>[];
-    " $$hydrate": (events: z.infer<Schema["event"]>[]) => void;
-    " $$flush": () => void;
-  },
+  EntityConstructor extends new () => IBaseEntity<Schema>,
 >(args: {
   schema: Schema;
-  entity: Entity;
-  plugins?: Plugin<Entity>[];
+  entity: EntityConstructor;
   storage: Storage;
-}): Repository<Entity> {
+  plugins?: Plugin<ConstructorReturnType<EntityConstructor>>[];
+}): Repository<ConstructorReturnType<EntityConstructor>> {
   return {
     async findOne({ entityId }) {
       const entityName = args.schema[" $$entityName"];
@@ -45,7 +40,7 @@ export function createRepository<
       })) as z.infer<Schema["event"]>[];
 
       // 2. hydrate entity
-      const entity = new Entity() as ConstructorReturnType<Entity>;
+      const entity = new Entity() as ConstructorReturnType<EntityConstructor>;
       entity[" $$hydrate"](events);
 
       return entity;
@@ -61,6 +56,11 @@ export function createRepository<
 
       // 3. flush queued events
       entity[" $$flush"]();
+
+      // 4. trigger plugins
+      for (const plugin of args.plugins ?? []) {
+        await plugin.onCommited({ entity, events: queuedEvents });
+      }
     },
   };
 }
