@@ -1,18 +1,15 @@
 import type z from "zod";
-import type { $$Reducer } from "./defineReducer";
-import type { $$BaseDefinedSchema } from "./defineSchema";
+import type { Reducer } from "./defineReducer";
+import type { BaseSchema } from "./defineSchema";
 
-type $$InitialEvent<DefinedSchema extends $$BaseDefinedSchema> = z.infer<
-  DefinedSchema["eventMap"][DefinedSchema[" $$initialEventName"]]
+type InitialEventOf<Schema extends BaseSchema> = z.infer<
+  Schema["eventMap"][Schema[" $$initialEventName"]]
 >;
 
-export function Entity<
-  EntityName extends string,
-  DefinedSchema extends $$BaseDefinedSchema,
->(
+export function Entity<EntityName extends string, Schema extends BaseSchema>(
   entityName: EntityName,
-  schema: DefinedSchema,
-  reducer: $$Reducer<DefinedSchema>,
+  schema: Schema,
+  reducer: Reducer<Schema>,
 ) {
   return class BaseEntity {
     // ----------------------
@@ -29,17 +26,17 @@ export function Entity<
     // private properties
     // ----------------------
     // biome-ignore lint/suspicious/noExplicitAny: initial state is null
-    " $$state": z.infer<DefinedSchema["state"]> = null as any;
-    " $$schema": DefinedSchema = schema;
-    " $$queuedEvents": z.infer<DefinedSchema["event"]>[] = [];
-    " $$reducer": $$Reducer<DefinedSchema> = reducer;
+    " $$state": z.infer<Schema["state"]> = null as any;
+    " $$schema": Schema = schema;
+    " $$queuedEvents": z.infer<Schema["event"]>[] = [];
+    " $$reducer": Reducer<Schema> = reducer;
 
     // ----------------------
     // constructor
     // ----------------------
     constructor(args: {
       entityId?: string;
-      body: $$InitialEvent<DefinedSchema>["body"];
+      body: InitialEventOf<Schema>["body"];
     }) {
       // 1. initialize entity
       this.entityId = args?.entityId ?? crypto.randomUUID();
@@ -53,11 +50,11 @@ export function Entity<
     // ----------------------
     // public methods
     // ----------------------
-    dispatch<K extends z.infer<DefinedSchema["event"]>["eventName"]>(
-      eventName: K,
-      body: z.infer<DefinedSchema["eventMap"][K]>["body"],
+    dispatch<EventName extends z.infer<Schema["event"]>["eventName"]>(
+      eventName: EventName,
+      body: z.infer<Schema["eventMap"][EventName]>["body"],
     ) {
-      type Event = z.infer<DefinedSchema["event"]>;
+      type Event = z.infer<Schema["event"]>;
 
       // 1. create event
       const event: Event = {

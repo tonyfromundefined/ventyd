@@ -1,14 +1,14 @@
 import type { z } from "zod";
-import type { $$BaseDefinedSchema } from "./defineSchema";
+import type { BaseSchema } from "./defineSchema";
 
-export type $$Reducer<T extends $$BaseDefinedSchema> = (
-  prevState: z.infer<T["state"]>,
-  event: z.infer<T["event"]>,
-) => z.infer<T["state"]>;
+export type Reducer<Schema extends BaseSchema> = (
+  prevState: z.infer<Schema["state"]>,
+  event: z.infer<Schema["event"]>,
+) => z.infer<Schema["state"]>;
 
-export function defineReducer<DefinedSchema extends $$BaseDefinedSchema>(
-  schema: DefinedSchema,
-  fn: $$Reducer<DefinedSchema>,
-): $$Reducer<DefinedSchema> {
+export function defineReducer<Schema extends BaseSchema>(
+  schema: Schema,
+  fn: Reducer<Schema>,
+): Reducer<Schema> {
   return fn;
 }

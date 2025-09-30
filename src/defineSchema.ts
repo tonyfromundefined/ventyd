@@ -3,17 +3,17 @@ import type { ValueOf, ZodEmptyObject, ZodEvent } from "./util-types";
 
 const defaultGenerateId = () => crypto.randomUUID();
 
-type $$EventSchemaMap<
+type EventSchemaMap<
   Namespace extends string,
   EventBodySchemaMap extends { [key: string]: ZodEmptyObject },
 > = {
-  [eventName in Extract<keyof EventBodySchemaMap, string>]: ZodEvent<
-    `${Namespace}:${eventName}`,
-    EventBodySchemaMap[eventName]
+  [EventName in Extract<keyof EventBodySchemaMap, string>]: ZodEvent<
+    `${Namespace}:${EventName}`,
+    EventBodySchemaMap[EventName]
   >;
 };
 
-export type $$DefinedSchema<
+export type Schema<
   Namespace extends string,
   EventBodySchemaMap extends { [key: string]: ZodEmptyObject },
   InitialEventName extends keyof EventBodySchemaMap,
@@ -24,14 +24,14 @@ export type $$DefinedSchema<
   " $$initialEventName": InitialEventName;
   " $$generateId": () => string;
   event: z.ZodDiscriminatedUnion<
-    ValueOf<$$EventSchemaMap<Namespace, EventBodySchemaMap>>[],
+    ValueOf<EventSchemaMap<Namespace, EventBodySchemaMap>>[],
     "eventName"
   >;
-  eventMap: $$EventSchemaMap<Namespace, EventBodySchemaMap>;
+  eventMap: EventSchemaMap<Namespace, EventBodySchemaMap>;
   state: State;
 };
 
-export type $$BaseDefinedSchema = $$DefinedSchema<
+export type BaseSchema = Schema<
   string,
   { [key: string]: ZodEmptyObject },
   string,
@@ -40,9 +40,7 @@ export type $$BaseDefinedSchema = $$DefinedSchema<
 
 export function defineSchema<
   Namespace extends string,
-  EventBodySchemaMap extends {
-    [key: string]: ZodEmptyObject;
-  },
+  EventBodySchemaMap extends { [key: string]: ZodEmptyObject },
   InitialEventName extends keyof EventBodySchemaMap,
   State extends ZodEmptyObject,
 >(
@@ -53,8 +51,8 @@ export function defineSchema<
     state: State;
     generateId?: () => string;
   },
-): $$DefinedSchema<Namespace, EventBodySchemaMap, InitialEventName, State> {
-  type SchemaMap = $$EventSchemaMap<Namespace, EventBodySchemaMap>;
+): Schema<Namespace, EventBodySchemaMap, InitialEventName, State> {
+  type SchemaMap = EventSchemaMap<Namespace, EventBodySchemaMap>;
   type SchemaArray = [ValueOf<SchemaMap>, ...ValueOf<SchemaMap>[]];
 
   const baseEvent = z.object({
