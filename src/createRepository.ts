@@ -1,7 +1,7 @@
 import type z from "zod";
 import type { BaseSchema } from "./defineSchema";
 import type { Storage } from "./defineStorage";
-import type { IBaseEntity } from "./Entity";
+import type { $$IEntity } from "./Entity";
 import type { Plugin } from "./Plugin";
 import type { ConstructorReturnType } from "./util-types";
 
@@ -21,7 +21,7 @@ export type Repository<Entity> = {
 
 export function createRepository<
   Schema extends BaseSchema,
-  EntityConstructor extends new () => IBaseEntity<Schema>,
+  EntityConstructor extends new () => $$IEntity<Schema>,
 >(args: {
   schema: Schema;
   entity: EntityConstructor;

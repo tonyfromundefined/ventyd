@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import type { ZodEmptyObject } from "./ZodEmptyObject";
 
-export type ZodEvent<
+export type ZodEventObject<
   EventName extends string,
   ZodEventBody extends ZodEmptyObject,
 > = z.ZodObject<

@@ -6,7 +6,7 @@ type InitialEventOf<Schema extends BaseSchema> = z.infer<
   Schema["eventMap"][Schema[" $$initialEventName"]]
 >;
 
-export interface IBaseEntity<Schema extends BaseSchema> {
+export interface $$IEntity<Schema extends BaseSchema> {
   // ----------------------
   // public properties
   // ----------------------
@@ -41,7 +41,7 @@ export function Entity<Schema extends BaseSchema>(
   schema: Schema,
   reducer: Reducer<Schema>,
 ) {
-  return class BaseEntity implements IBaseEntity<Schema> {
+  return class $$Entity implements $$IEntity<Schema> {
     // ----------------------
     // public properties
     // ----------------------

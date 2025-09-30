@@ -1,5 +1,4 @@
 import z from "zod";
-import { createRepository } from "./createRepository";
 import { defineReducer } from "./defineReducer";
 import { defineSchema } from "./defineSchema";
 import { Entity } from "./Entity";
@@ -43,19 +42,6 @@ class User extends Entity(userSchema, userReducer) {
     this.dispatch("user:deleted", {});
   }
 }
-
-const repo = createRepository({
-  entity: User,
-  schema: userSchema,
-  storage: {} as any,
-  plugins: [],
-});
-
-repo.findOne({ entityId: "1234" }).then((u) => {
-  if (u) {
-    u.nickname.toLocaleLowerCase();
-  }
-});
 
 test("Entity created successfully", () => {
   const user = new User({
