@@ -6,8 +6,7 @@ type InitialEventOf<Schema extends BaseSchema> = z.infer<
   Schema["eventMap"][Schema[" $$initialEventName"]]
 >;
 
-export function Entity<EntityName extends string, Schema extends BaseSchema>(
-  entityName: EntityName,
+export function Entity<Schema extends BaseSchema>(
   schema: Schema,
   reducer: Reducer<Schema>,
 ) {
@@ -15,10 +14,14 @@ export function Entity<EntityName extends string, Schema extends BaseSchema>(
     // ----------------------
     // public properties
     // ----------------------
-    entityName: EntityName = entityName;
+    entityName: Schema[" $$entityName"] = schema[" $$entityName"];
     entityId: string;
 
     get state() {
+      if (this[" $$state"] === null) {
+        throw new Error("Entity is not initialized");
+      }
+
       return this[" $$state"];
     }
 
@@ -34,17 +37,20 @@ export function Entity<EntityName extends string, Schema extends BaseSchema>(
     // ----------------------
     // constructor
     // ----------------------
-    constructor(args: {
+    constructor(args?: {
       entityId?: string;
-      body: InitialEventOf<Schema>["body"];
+      body?: InitialEventOf<Schema>["body"];
     }) {
       // 1. initialize entity
-      this.entityId = args?.entityId ?? crypto.randomUUID();
+      const generateId = schema[" $$generateId"];
+      this.entityId = args?.entityId ?? generateId();
 
       // 2. dispatch initial event
-      const namespace = schema[" $$namespace"];
-      const initialEventName = schema[" $$initialEventName"];
-      this.dispatch(`${namespace}:${initialEventName}`, args.body);
+      if (args?.body) {
+        const entityName = schema[" $$entityName"];
+        const initialEventName = schema[" $$initialEventName"];
+        this.dispatch(`${entityName}:${initialEventName}`, args.body);
+      }
     }
 
     // ----------------------
@@ -62,7 +68,7 @@ export function Entity<EntityName extends string, Schema extends BaseSchema>(
         eventName,
         eventCreatedAt: new Date().toISOString(),
         entityId: this.entityId,
-        entityName,
+        entityName: this.entityName,
         body,
       } as Event;
 
@@ -82,6 +88,17 @@ export function Entity<EntityName extends string, Schema extends BaseSchema>(
     // ----------------------
     " $$flush"() {
       this[" $$queuedEvents"] = [];
+    }
+
+    " $$hydrate"(events: z.infer<Schema["event"]>[]) {
+      if (this[" $$state"] !== null) {
+        throw new Error("Entity is already initialized");
+      }
+
+      const reducer = this[" $$reducer"];
+      const prevState = this[" $$state"];
+
+      this[" $$state"] = events.reduce(reducer, prevState);
     }
   };
 }

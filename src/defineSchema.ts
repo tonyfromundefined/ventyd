@@ -4,30 +4,30 @@ import type { ValueOf, ZodEmptyObject, ZodEvent } from "./util-types";
 const defaultGenerateId = () => crypto.randomUUID();
 
 type EventSchemaMap<
-  Namespace extends string,
+  EntityName extends string,
   EventBodySchemaMap extends { [key: string]: ZodEmptyObject },
 > = {
   [EventName in Extract<keyof EventBodySchemaMap, string>]: ZodEvent<
-    `${Namespace}:${EventName}`,
+    `${EntityName}:${EventName}`,
     EventBodySchemaMap[EventName]
   >;
 };
 
 export type Schema<
-  Namespace extends string,
+  EntityName extends string,
   EventBodySchemaMap extends { [key: string]: ZodEmptyObject },
   InitialEventName extends keyof EventBodySchemaMap,
   State extends ZodEmptyObject,
 > = {
   " $$typeof": "DefinedSchema";
-  " $$namespace": Namespace;
+  " $$entityName": EntityName;
   " $$initialEventName": InitialEventName;
   " $$generateId": () => string;
   event: z.ZodDiscriminatedUnion<
-    ValueOf<EventSchemaMap<Namespace, EventBodySchemaMap>>[],
+    ValueOf<EventSchemaMap<EntityName, EventBodySchemaMap>>[],
     "eventName"
   >;
-  eventMap: EventSchemaMap<Namespace, EventBodySchemaMap>;
+  eventMap: EventSchemaMap<EntityName, EventBodySchemaMap>;
   state: State;
 };
 
@@ -39,20 +39,20 @@ export type BaseSchema = Schema<
 >;
 
 export function defineSchema<
-  Namespace extends string,
+  EntityName extends string,
   EventBodySchemaMap extends { [key: string]: ZodEmptyObject },
   InitialEventName extends keyof EventBodySchemaMap,
   State extends ZodEmptyObject,
 >(
-  namespace: Namespace,
+  entityName: EntityName,
   options: {
     event: EventBodySchemaMap;
     initialEventName: InitialEventName;
     state: State;
     generateId?: () => string;
   },
-): Schema<Namespace, EventBodySchemaMap, InitialEventName, State> {
-  type SchemaMap = EventSchemaMap<Namespace, EventBodySchemaMap>;
+): Schema<EntityName, EventBodySchemaMap, InitialEventName, State> {
+  type SchemaMap = EventSchemaMap<EntityName, EventBodySchemaMap>;
   type SchemaArray = [ValueOf<SchemaMap>, ...ValueOf<SchemaMap>[]];
 
   const baseEvent = z.object({
@@ -70,8 +70,8 @@ export function defineSchema<
       return {
         // biome-ignore lint/performance/noAccumulatingSpread: biome is dumb
         ...acc,
-        [`${namespace}:${eventName}`]: baseEvent.extend({
-          eventName: z.literal(`${namespace}:${eventName}`),
+        [`${entityName}:${eventName}`]: baseEvent.extend({
+          eventName: z.literal(`${entityName}:${eventName}`),
           body,
         }),
       };
@@ -81,7 +81,7 @@ export function defineSchema<
 
   const eventSchemaEntries = eventBodySchemaEntries.map(([eventName, body]) =>
     baseEvent.extend({
-      eventName: z.literal(`${namespace}:${eventName}`),
+      eventName: z.literal(`${entityName}:${eventName}`),
       body,
     }),
   ) as SchemaArray;
@@ -89,7 +89,7 @@ export function defineSchema<
   const [a, ...b] = eventSchemaEntries;
 
   return {
-    " $$namespace": namespace,
+    " $$entityName": entityName,
     " $$typeof": "DefinedSchema",
     " $$initialEventName": options.initialEventName,
     " $$generateId": options.generateId ?? defaultGenerateId,
