@@ -1,11 +1,9 @@
 import { z } from "zod";
-import type { ValueOf } from "./ValueOf";
-import type { ZodEmptyObject } from "./ZodEmptyObject";
-import type { ZodEvent } from "./ZodEvent";
+import type { ValueOf, ZodEmptyObject, ZodEvent } from "./util-types";
 
 const defaultGenerateId = () => crypto.randomUUID();
 
-export type $$EventSchemaMap<
+type $$EventSchemaMap<
   Namespace extends string,
   EventBodySchemaMap extends { [key: string]: ZodEmptyObject },
 > = {
@@ -32,6 +30,13 @@ export type $$DefinedSchema<
   eventMap: $$EventSchemaMap<Namespace, EventBodySchemaMap>;
   state: State;
 };
+
+export type $$BaseDefinedSchema = $$DefinedSchema<
+  string,
+  { [key: string]: ZodEmptyObject },
+  string,
+  ZodEmptyObject
+>;
 
 export function defineSchema<
   Namespace extends string,

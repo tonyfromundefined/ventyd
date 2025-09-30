@@ -1,16 +1,14 @@
 import type z from "zod";
 import type { $$Reducer } from "./defineReducer";
-import type { $$DefinedSchema } from "./defineSchema";
-import type { ZodEmptyObject } from "./ZodEmptyObject";
+import type { $$BaseDefinedSchema } from "./defineSchema";
+
+type $$InitialEvent<DefinedSchema extends $$BaseDefinedSchema> = z.infer<
+  DefinedSchema["eventMap"][DefinedSchema[" $$initialEventName"]]
+>;
 
 export function Entity<
   EntityName extends string,
-  DefinedSchema extends $$DefinedSchema<
-    string,
-    { [key: string]: ZodEmptyObject },
-    string,
-    ZodEmptyObject
-  >,
+  DefinedSchema extends $$BaseDefinedSchema,
 >(
   entityName: EntityName,
   schema: DefinedSchema,
@@ -20,7 +18,7 @@ export function Entity<
     // ----------------------
     // public properties
     // ----------------------
-    static entityName: EntityName = entityName;
+    entityName: EntityName = entityName;
     entityId: string;
 
     get state() {
@@ -32,21 +30,19 @@ export function Entity<
     // ----------------------
     // biome-ignore lint/suspicious/noExplicitAny: initial state is null
     " $$state": z.infer<DefinedSchema["state"]> = null as any;
+    " $$schema": DefinedSchema = schema;
     " $$queuedEvents": z.infer<DefinedSchema["event"]>[] = [];
-    " $$reducer": $$Reducer<DefinedSchema>;
+    " $$reducer": $$Reducer<DefinedSchema> = reducer;
 
     // ----------------------
     // constructor
     // ----------------------
     constructor(args: {
       entityId?: string;
-      body: z.infer<
-        DefinedSchema["eventMap"][DefinedSchema[" $$initialEventName"]]
-      >["body"];
+      body: $$InitialEvent<DefinedSchema>["body"];
     }) {
       // 1. initialize entity
       this.entityId = args?.entityId ?? crypto.randomUUID();
-      this[" $$reducer"] = reducer;
 
       // 2. dispatch initial event
       const namespace = schema[" $$namespace"];
@@ -62,7 +58,6 @@ export function Entity<
       body: z.infer<DefinedSchema["eventMap"][K]>["body"],
     ) {
       type Event = z.infer<DefinedSchema["event"]>;
-      type State = z.infer<DefinedSchema["state"]>;
 
       // 1. create event
       const event: Event = {
@@ -82,7 +77,7 @@ export function Entity<
       queuedEvents.push(event);
 
       // 3. update state
-      this[" $$state"] = reducer(prevState, event) as State;
+      this[" $$state"] = reducer(prevState, event);
     }
 
     // ----------------------
