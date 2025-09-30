@@ -3,7 +3,7 @@ import type { ZodEmptyObject } from "./ZodEmptyObject";
 
 export type ZodEvent<
   EventName extends string,
-  ZodDomainEventBody extends ZodEmptyObject,
+  ZodEventBody extends ZodEmptyObject,
 > = z.ZodObject<
   {
     eventId: z.ZodString;
@@ -11,7 +11,7 @@ export type ZodEvent<
     eventCreatedAt: z.ZodString;
     entityName: z.ZodString;
     entityId: z.ZodString;
-    body: ZodDomainEventBody;
+    body: ZodEventBody;
   },
   z.core.$strip
 >;
