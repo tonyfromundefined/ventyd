@@ -1,45 +1,35 @@
-import type { $$DefinedDomainEvent } from "./defineDomainEvent";
-import type { $$DefinedState } from "./defineState";
+import type { z } from "zod";
+import type { $$DefinedSchema, $$EventSchemaMap } from "./defineSchema";
+import type { ValueOf } from "./ValueOf";
 import type { ZodEmptyObject } from "./ZodEmptyObject";
-import type { $$ZodFrom } from "./ZodFrom";
 
-type $$ReducerFn<
-  DefinedDomainEvent extends $$DefinedDomainEvent<
-    string,
-    { [key: string]: ZodEmptyObject }
-  >,
-  DefinedState extends $$DefinedState<ZodEmptyObject>,
-> = (
-  prevState: $$ZodFrom<DefinedState>,
-  event: $$ZodFrom<DefinedDomainEvent>,
-) => $$ZodFrom<DefinedState>;
-
-export type $$DefinedReducer<
-  DefinedDomainEvent extends $$DefinedDomainEvent<
-    string,
-    { [key: string]: ZodEmptyObject }
-  >,
-  DefinedState extends $$DefinedState<ZodEmptyObject>,
-> = $$ReducerFn<DefinedDomainEvent, DefinedState> & {
-  " $$typeof": "DefinedReducer";
-};
+export type $$Reducer<T> = T extends $$DefinedSchema<
+  infer Namespace,
+  infer EventBodySchemaMap,
+  string,
+  infer State
+>
+  ? (
+      prevState: z.infer<State>,
+      event: z.infer<
+        z.ZodDiscriminatedUnion<
+          ValueOf<$$EventSchemaMap<Namespace, EventBodySchemaMap>>[],
+          "eventName"
+        >
+      >,
+    ) => z.infer<State>
+  : never;
 
 export function defineReducer<
-  Namespace extends string,
-  DefinedDomainEvent extends $$DefinedDomainEvent<
-    Namespace,
-    { [key: string]: ZodEmptyObject }
+  DefinedSchema extends $$DefinedSchema<
+    string,
+    { [key: string]: ZodEmptyObject },
+    string,
+    ZodEmptyObject
   >,
-  DefinedState extends $$DefinedState<ZodEmptyObject>,
->(options: {
-  definedDomainEvent: DefinedDomainEvent;
-  definedState: DefinedState;
-  reducer: $$ReducerFn<DefinedDomainEvent, DefinedState>;
-}): $$DefinedReducer<DefinedDomainEvent, DefinedState> {
-  const r = options.reducer as $$DefinedReducer<
-    DefinedDomainEvent,
-    DefinedState
-  >;
-  r[" $$typeof"] = "DefinedReducer";
-  return r;
+>(
+  schema: DefinedSchema,
+  fn: $$Reducer<DefinedSchema>,
+): $$Reducer<DefinedSchema> {
+  return fn;
 }

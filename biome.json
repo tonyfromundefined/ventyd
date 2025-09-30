@@ -20,6 +20,9 @@
       "recommended": true,
       "complexity": {
         "noBannedTypes": "off"
+      },
+      "correctness": {
+        "noUnusedFunctionParameters": "off"
       }
     }
   },
