@@ -23,10 +23,6 @@ export type Schema<
   InitialEventName extends keyof ZodEventBodyObjectMapByEventName,
   State extends ZodEmptyObject,
 > = {
-  " $$typeof": "DefinedSchema";
-  " $$entityName": EntityName;
-  " $$initialEventName": InitialEventName;
-  " $$generateId": () => string;
   event: z.ZodDiscriminatedUnion<
     ValueOf<
       ZodEventObjectMapByEventName<EntityName, ZodEventBodyObjectMapByEventName>
@@ -38,6 +34,10 @@ export type Schema<
     ZodEventBodyObjectMapByEventName
   >;
   state: State;
+  " $$entityName": EntityName;
+  " $$eventBodyMap": ZodEventBodyObjectMapByEventName;
+  " $$initialEventName": InitialEventName;
+  " $$generateId": () => string;
 };
 
 export type BaseSchema = Schema<
@@ -108,12 +108,12 @@ export function defineSchema<
   const [a, ...b] = eventSchemaEntries;
 
   return {
-    " $$entityName": entityName,
-    " $$typeof": "DefinedSchema",
-    " $$initialEventName": options.initialEventName,
-    " $$generateId": options.generateId ?? defaultGenerateId,
     event: z.discriminatedUnion("eventName", [a, ...b]),
     eventMap: eventSchemaMap,
     state: options.state,
+    " $$entityName": entityName,
+    " $$eventBodyMap": eventBodySchemaMap,
+    " $$initialEventName": options.initialEventName,
+    " $$generateId": options.generateId ?? defaultGenerateId,
   };
 }

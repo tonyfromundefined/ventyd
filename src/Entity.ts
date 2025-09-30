@@ -1,4 +1,4 @@
-import type z from "zod";
+import { z } from "zod";
 import type { Reducer } from "./defineReducer";
 import type { BaseSchema } from "./defineSchema";
 
@@ -72,15 +72,28 @@ export function Entity<Schema extends BaseSchema>(
       entityId?: string;
       body?: InitialEventOf<Schema>["body"];
     }) {
+      const entityName = schema[" $$entityName"];
+      const initialEventName = schema[" $$initialEventName"];
+      const initialEventBodySchema =
+        schema[" $$eventBodyMap"][initialEventName];
+      type InitialEventBody = InitialEventOf<Schema>["body"];
+
       // 1. initialize entity
       const generateId = schema[" $$generateId"];
       this.entityId = args?.entityId ?? generateId();
 
       // 2. dispatch initial event
       if (args?.body) {
-        const entityName = schema[" $$entityName"];
-        const initialEventName = schema[" $$initialEventName"];
-        this.dispatch(`${entityName}:${initialEventName}`, args.body);
+        if (!initialEventBodySchema) {
+          throw new Error(
+            `Body schema for initial event ${initialEventName} not found`,
+          );
+        }
+
+        this.dispatch(
+          `${entityName}:${initialEventName}`,
+          initialEventBodySchema.parse(args.body) as InitialEventBody,
+        );
       }
     }
 
@@ -121,7 +134,7 @@ export function Entity<Schema extends BaseSchema>(
       this[" $$queuedEvents"] = [];
     }
 
-    " $$hydrate"(events: z.infer<Schema["event"]>[]) {
+    " $$hydrate"(input: unknown[]) {
       if (this[" $$state"] !== null) {
         throw new Error("Entity is already initialized");
       }
@@ -129,6 +142,11 @@ export function Entity<Schema extends BaseSchema>(
       const reducer = this[" $$reducer"];
       const prevState = this[" $$state"];
 
+      // 1. validate events
+      const EventArray = z.array(this[" $$schema"].event);
+      const events = EventArray.parse(input) as z.infer<Schema["event"]>[];
+
+      // 2. compute state
       this[" $$state"] = events.reduce(reducer, prevState);
     }
   };
