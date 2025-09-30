@@ -1,4 +1,4 @@
-import type z from "zod";
+import type { z } from "zod";
 import type { BaseSchema } from "./defineSchema";
 import type { Storage } from "./defineStorage";
 import type { $$IEntity } from "./Entity";
@@ -21,7 +21,9 @@ export type Repository<Entity> = {
 
 export function createRepository<
   Schema extends BaseSchema,
-  EntityConstructor extends new () => $$IEntity<Schema>,
+  EntityConstructor extends new (args?: {
+    entityId?: string;
+  }) => $$IEntity<Schema>,
 >(args: {
   schema: Schema;
   entity: EntityConstructor;
@@ -30,17 +32,27 @@ export function createRepository<
 }): Repository<ConstructorReturnType<EntityConstructor>> {
   return {
     async findOne({ entityId }) {
+      // 0. prepare
+      type IEntity = ConstructorReturnType<EntityConstructor>;
+      type IEvent = z.infer<Schema["event"]>;
+
       const entityName = args.schema[" $$entityName"];
       const Entity = args.entity;
 
       // 1. query events by entity ID
-      const events = (await args.storage.getEventsByEntityId({
-        entityName: entityName,
-        entityId: entityId,
-      })) as z.infer<Schema["event"]>[];
+      const events = await args.storage
+        .getEventsByEntityId({
+          entityName: entityName,
+          entityId: entityId,
+        })
+        .then((x) => x as IEvent[]);
+
+      if (events.length === 0) {
+        return null;
+      }
 
       // 2. hydrate entity
-      const entity = new Entity() as ConstructorReturnType<EntityConstructor>;
+      const entity = new Entity({ entityId }) as IEntity;
       entity[" $$hydrate"](events);
 
       return entity;

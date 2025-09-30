@@ -1,4 +1,4 @@
-import z from "zod";
+import { z } from "zod";
 import { defineReducer } from "./defineReducer";
 import { defineSchema } from "./defineSchema";
 import { Entity } from "./Entity";
@@ -29,6 +29,9 @@ const userReducer = defineReducer(userSchema, (prevState, event) => {
         ...prevState,
         deletedAt: event.eventCreatedAt,
       };
+    }
+    default: {
+      return prevState;
     }
   }
 });

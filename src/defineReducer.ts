@@ -3,7 +3,7 @@ import type { BaseSchema } from "./defineSchema";
 
 export type Reducer<Schema extends BaseSchema> = (
   prevState: z.infer<Schema["state"]>,
-  event: z.infer<Schema["event"]>,
+  event: z.infer<Schema["event"]> | { eventName: "%unknown%" },
 ) => z.infer<Schema["state"]>;
 
 export function defineReducer<Schema extends BaseSchema>(

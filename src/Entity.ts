@@ -72,11 +72,11 @@ export function Entity<Schema extends BaseSchema>(
       entityId?: string;
       body?: InitialEventOf<Schema>["body"];
     }) {
+      // 0. prepare
       const entityName = schema[" $$entityName"];
       const initialEventName = schema[" $$initialEventName"];
       const initialEventBodySchema =
         schema[" $$eventBodyMap"][initialEventName];
-      type InitialEventBody = InitialEventOf<Schema>["body"];
 
       // 1. initialize entity
       const generateId = schema[" $$generateId"];
@@ -90,10 +90,10 @@ export function Entity<Schema extends BaseSchema>(
           );
         }
 
-        this.dispatch(
-          `${entityName}:${initialEventName}`,
-          initialEventBodySchema.parse(args.body) as InitialEventBody,
-        );
+        const eventName = `${entityName}:${initialEventName}` as const;
+        const body = initialEventBodySchema.parse(args.body);
+
+        this.dispatch(eventName, body);
       }
     }
 
@@ -104,21 +104,21 @@ export function Entity<Schema extends BaseSchema>(
       eventName: EventName,
       body: z.infer<Schema["eventMap"][EventName]>["body"],
     ) {
-      type Event = z.infer<Schema["event"]>;
+      // 0. prepare
+      type IEvent = z.infer<Schema["event"]>;
+      const queuedEvents = this[" $$queuedEvents"];
+      const reducer = this[" $$reducer"];
+      const prevState = this[" $$state"];
 
       // 1. create event
-      const event: Event = {
+      const event = {
         eventId: crypto.randomUUID(),
         eventName,
         eventCreatedAt: new Date().toISOString(),
         entityId: this.entityId,
         entityName: this.entityName,
         body,
-      } as Event;
-
-      const queuedEvents = this[" $$queuedEvents"];
-      const reducer = this[" $$reducer"];
-      const prevState = this[" $$state"];
+      } as IEvent;
 
       // 2. add event to queue
       queuedEvents.push(event);
@@ -135,18 +135,21 @@ export function Entity<Schema extends BaseSchema>(
     }
 
     " $$hydrate"(input: unknown[]) {
+      // 0. prepare
+      type IEvent = z.infer<Schema["event"]>;
+      const reducer = this[" $$reducer"];
+      const prevState = this[" $$state"];
+      const EventArraySchema = z.array(this[" $$schema"].event);
+
+      // 1. validate current state
       if (this[" $$state"] !== null) {
         throw new Error("Entity is already initialized");
       }
 
-      const reducer = this[" $$reducer"];
-      const prevState = this[" $$state"];
+      // 2. validate events
+      const events = EventArraySchema.parse(input) as IEvent[];
 
-      // 1. validate events
-      const EventArray = z.array(this[" $$schema"].event);
-      const events = EventArray.parse(input) as z.infer<Schema["event"]>[];
-
-      // 2. compute state
+      // 3. compute state
       this[" $$state"] = events.reduce(reducer, prevState);
     }
   };

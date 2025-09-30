@@ -68,44 +68,43 @@ export function defineSchema<
   InitialEventName,
   State
 > {
-  type SchemaMap = ZodEventObjectMapByEventName<
+  // 0. prepare
+  type ISchemaMap = ZodEventObjectMapByEventName<
     EntityName,
     ZodEventBodyObjectMapByEventName
   >;
-  type SchemaArray = [ValueOf<SchemaMap>, ...ValueOf<SchemaMap>[]];
+  type ISchemaTuple = [ValueOf<ISchemaMap>, ...ValueOf<ISchemaMap>[]];
 
-  const baseEvent = z.object({
+  const eventBodySchemaMap = options.event;
+  const eventBodySchemaEntries = Object.entries(options.event);
+  const BaseEventSchema = z.object({
     eventId: z.string(),
     eventCreatedAt: z.string(),
     entityName: z.string(),
     entityId: z.string(),
   });
 
-  const eventBodySchemaMap = options.event;
-  const eventBodySchemaEntries = Object.entries(eventBodySchemaMap);
-
+  // 1. create event schema map
   const eventSchemaMap = eventBodySchemaEntries.reduce(
-    (acc, [eventName, body]) => {
-      return {
-        // biome-ignore lint/performance/noAccumulatingSpread: biome is dumb
-        ...acc,
-        [`${entityName}:${eventName}`]: baseEvent.extend({
-          eventName: z.literal(`${entityName}:${eventName}`),
-          body,
-        }),
-      };
-    },
-    {} as SchemaMap,
+    (acc, [eventName, body]) => ({
+      // biome-ignore lint/performance/noAccumulatingSpread: biome is dumb
+      ...acc,
+      [`${entityName}:${eventName}`]: BaseEventSchema.extend({
+        eventName: z.literal(`${entityName}:${eventName}`),
+        body,
+      }),
+    }),
+    {} as ISchemaMap,
   );
 
-  const eventSchemaEntries = eventBodySchemaEntries.map(([eventName, body]) =>
-    baseEvent.extend({
+  // 2. create event schema tuple
+  const eventSchemaTuple = eventBodySchemaEntries.map(([eventName, body]) =>
+    BaseEventSchema.extend({
       eventName: z.literal(`${entityName}:${eventName}`),
       body,
     }),
-  ) as SchemaArray;
-
-  const [a, ...b] = eventSchemaEntries;
+  ) as ISchemaTuple;
+  const [a, ...b] = eventSchemaTuple;
 
   return {
     event: z.discriminatedUnion("eventName", [a, ...b]),
