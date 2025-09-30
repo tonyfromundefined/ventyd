@@ -12,7 +12,7 @@ export class MongoDBStorage implements Storage {
 
   constructor(db: Db) {
     this.eventsCollection = db.collection("events");
-    
+
     // Create indexes for better query performance
     this.eventsCollection.createIndex({ entityName: 1, entityId: 1 });
     this.eventsCollection.createIndex({ eventCreatedAt: 1 });
@@ -34,7 +34,7 @@ export class MongoDBStorage implements Storage {
       .toArray();
 
     // Remove MongoDB's _id field
-    return events.map(event => {
+    return events.map((event) => {
       const { _id, ...rest } = event as any;
       return rest;
     });
@@ -47,7 +47,7 @@ export class MongoDBStorage implements Storage {
     events: z.infer<BaseSchema["event"]>[];
   }): Promise<void> {
     if (args.events.length === 0) return;
-    
+
     await this.eventsCollection.insertMany(args.events as any);
   }
 
@@ -63,9 +63,9 @@ export class MongoDBStorage implements Storage {
    */
   async getAllEvents(): Promise<z.infer<BaseSchema["event"]>[]> {
     const events = await this.eventsCollection.find({}).toArray();
-    
+
     // Remove MongoDB's _id field
-    return events.map(event => {
+    return events.map((event) => {
       const { _id, ...rest } = event as any;
       return rest;
     });

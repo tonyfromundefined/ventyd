@@ -15,7 +15,7 @@ export const orderSchema = defineSchema("order", {
           productId: z.string(),
           quantity: z.number().positive(),
           price: z.number().positive(),
-        })
+        }),
       ),
     }),
     itemAdded: z.object({
@@ -49,7 +49,7 @@ export const orderSchema = defineSchema("order", {
         productId: z.string(),
         quantity: z.number(),
         price: z.number(),
-      })
+      }),
     ),
     status: z.enum(["draft", "confirmed", "shipped", "delivered", "cancelled"]),
     totalAmount: z.number(),
@@ -74,7 +74,7 @@ export const orderReducer = defineReducer(orderSchema, (prevState, event) => {
     case "order:created": {
       const totalAmount = event.body.items.reduce(
         (sum, item) => sum + item.price * item.quantity,
-        0
+        0,
       );
       return {
         customerId: event.body.customerId,
@@ -94,9 +94,9 @@ export const orderReducer = defineReducer(orderSchema, (prevState, event) => {
         price: event.body.price,
       };
       const existingItemIndex = prevState.items.findIndex(
-        (item) => item.productId === event.body.productId
+        (item) => item.productId === event.body.productId,
       );
-      
+
       let updatedItems;
       if (existingItemIndex >= 0) {
         updatedItems = [...prevState.items];
@@ -107,12 +107,12 @@ export const orderReducer = defineReducer(orderSchema, (prevState, event) => {
       } else {
         updatedItems = [...prevState.items, newItem];
       }
-      
+
       const totalAmount = updatedItems.reduce(
         (sum, item) => sum + item.price * item.quantity,
-        0
+        0,
       );
-      
+
       return {
         ...prevState,
         items: updatedItems,
@@ -121,11 +121,11 @@ export const orderReducer = defineReducer(orderSchema, (prevState, event) => {
     }
     case "order:itemRemoved": {
       const updatedItems = prevState.items.filter(
-        (item) => item.productId !== event.body.productId
+        (item) => item.productId !== event.body.productId,
       );
       const totalAmount = updatedItems.reduce(
         (sum, item) => sum + item.price * item.quantity,
-        0
+        0,
       );
       return {
         ...prevState,
@@ -212,7 +212,7 @@ export class Order extends Entity(orderSchema, orderReducer) {
     if (!this.canModifyItems) {
       throw new Error(`Cannot modify items in ${this.state.status} status`);
     }
-    
+
     this.dispatch("order:itemAdded", { productId, quantity, price });
   }
 
@@ -220,12 +220,12 @@ export class Order extends Entity(orderSchema, orderReducer) {
     if (!this.canModifyItems) {
       throw new Error(`Cannot modify items in ${this.state.status} status`);
     }
-    
+
     const item = this.state.items.find((i) => i.productId === productId);
     if (!item) {
       throw new Error(`Item ${productId} not found in order`);
     }
-    
+
     this.dispatch("order:itemRemoved", { productId });
   }
 
@@ -233,11 +233,11 @@ export class Order extends Entity(orderSchema, orderReducer) {
     if (this.state.status !== "draft") {
       throw new Error(`Cannot confirm order in ${this.state.status} status`);
     }
-    
+
     if (this.state.items.length === 0) {
       throw new Error("Cannot confirm order with no items");
     }
-    
+
     this.dispatch("order:confirmed", { paymentMethod });
   }
 
@@ -245,7 +245,7 @@ export class Order extends Entity(orderSchema, orderReducer) {
     if (!this.canShip) {
       throw new Error(`Cannot ship order in ${this.state.status} status`);
     }
-    
+
     this.dispatch("order:shipped", { trackingNumber, carrier });
   }
 
@@ -253,7 +253,7 @@ export class Order extends Entity(orderSchema, orderReducer) {
     if (!this.canDeliver) {
       throw new Error(`Cannot deliver order in ${this.state.status} status`);
     }
-    
+
     this.dispatch("order:delivered", {
       deliveredAt: new Date().toISOString(),
       signature,
@@ -261,10 +261,13 @@ export class Order extends Entity(orderSchema, orderReducer) {
   }
 
   cancel(reason: string, cancelledBy: "customer" | "system" | "admin") {
-    if (this.state.status === "delivered" || this.state.status === "cancelled") {
+    if (
+      this.state.status === "delivered" ||
+      this.state.status === "cancelled"
+    ) {
       throw new Error(`Cannot cancel order in ${this.state.status} status`);
     }
-    
+
     this.dispatch("order:cancelled", { reason, cancelledBy });
   }
 }

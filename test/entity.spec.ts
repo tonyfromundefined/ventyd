@@ -21,7 +21,7 @@ describe("Entity Unit Tests", () => {
       expect(user.nickname).toBe("TestUser");
       expect(user.email).toBe("test@example.com");
       expect(user[" $$queuedEvents"].length).toBe(1);
-      
+
       const event = user[" $$queuedEvents"][0];
       expect(event?.eventName).toBe("user:created");
       expect(event?.body).toEqual({
@@ -54,7 +54,7 @@ describe("Entity Unit Tests", () => {
 
     test("should use custom ID generator from schema", () => {
       let idCounter = 1000;
-      
+
       const schema = defineSchema("test", {
         event: {
           created: z.object({ value: z.string() }),
@@ -72,10 +72,10 @@ describe("Entity Unit Tests", () => {
       });
 
       const TestEntity = Entity(schema, reducer);
-      
+
       const entity1 = new TestEntity({ body: { value: "first" } });
       const entity2 = new TestEntity({ body: { value: "second" } });
-      
+
       expect(entity1.entityId).toBe("test-1000");
       expect(entity2.entityId).toBe("test-1001");
     });
@@ -106,13 +106,13 @@ describe("Entity Unit Tests", () => {
 
       // Delete user
       user.delete("Test deletion");
-      
+
       expect(user[" $$queuedEvents"].length).toBe(3);
       expect(user.isDeleted).toBe(true);
 
       // Restore user
       user.restore();
-      
+
       expect(user[" $$queuedEvents"].length).toBe(4);
       expect(user.isDeleted).toBe(false);
     });
@@ -127,14 +127,14 @@ describe("Entity Unit Tests", () => {
       });
 
       const event = user[" $$queuedEvents"][0];
-      
+
       expect(event).toBeDefined();
       expect(event?.eventId).toBeDefined();
       expect(event?.eventName).toBe("user:created");
       expect(event?.eventCreatedAt).toBeDefined();
       expect(event?.entityId).toBe("user-456");
       expect(event?.entityName).toBe("user");
-      
+
       // Verify timestamp format
       const timestamp = new Date(event!.eventCreatedAt);
       expect(timestamp).toBeInstanceOf(Date);
@@ -229,7 +229,7 @@ describe("Entity Unit Tests", () => {
       ];
 
       expect(() => user[" $$hydrate"](events)).toThrow(
-        "Entity is already initialized"
+        "Entity is already initialized",
       );
     });
 
@@ -370,7 +370,9 @@ describe("Entity Unit Tests", () => {
 
       // Add quantity to existing item
       order.addItem("prod-1", 1, 50);
-      expect(order.items.find(i => i.productId === "prod-1")?.quantity).toBe(3);
+      expect(order.items.find((i) => i.productId === "prod-1")?.quantity).toBe(
+        3,
+      );
       expect(order.totalAmount).toBe(240);
 
       // Remove item
@@ -388,7 +390,7 @@ describe("Entity Unit Tests", () => {
   describe("State Getter", () => {
     test("should throw when accessing state before initialization", () => {
       const user = new User({ entityId: "user-no-init" });
-      
+
       expect(() => user.state).toThrow("Entity is not initialized");
     });
 
@@ -423,7 +425,7 @@ describe("Entity Unit Tests", () => {
 
       const state2 = user.state;
       expect(state2.bio).toBe("Engineer");
-      
+
       // Note: Since reducer returns a new object, state1 and state2 are different references
       // state1 still points to the old state object
       expect(state1.bio).toBeUndefined();
@@ -492,12 +494,12 @@ describe("Entity Unit Tests", () => {
 
       user.updateProfile({ bio: "Bio 1" });
       user.updateProfile({ bio: "Bio 2" });
-      
-      const eventIds = user[" $$queuedEvents"].map(e => e?.eventId);
+
+      const eventIds = user[" $$queuedEvents"].map((e) => e?.eventId);
       const uniqueIds = new Set(eventIds);
-      
+
       expect(uniqueIds.size).toBe(3);
-      eventIds.forEach(id => {
+      eventIds.forEach((id) => {
         expect(id).toBeDefined();
         expect(typeof id).toBe("string");
       });

@@ -98,7 +98,7 @@ export class User extends Entity(userSchema, userReducer) {
     if (this.isDeleted) {
       throw new Error("Cannot update profile of deleted user");
     }
-    
+
     this.dispatch("user:profileUpdated", updates);
   }
 
@@ -106,7 +106,7 @@ export class User extends Entity(userSchema, userReducer) {
     if (this.isDeleted) {
       throw new Error("User is already deleted");
     }
-    
+
     this.dispatch("user:deleted", { reason });
   }
 
@@ -114,7 +114,7 @@ export class User extends Entity(userSchema, userReducer) {
     if (!this.isDeleted) {
       throw new Error("User is not deleted");
     }
-    
+
     this.dispatch("user:restored", {});
   }
 }

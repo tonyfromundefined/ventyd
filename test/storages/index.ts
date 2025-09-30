@@ -50,12 +50,12 @@ export function createMongoDBStorageFactory(): StorageFactory {
       // Start in-memory MongoDB server
       mongod = await MongoMemoryServer.create();
       const uri = mongod.getUri();
-      
+
       // Connect to MongoDB
       client = new MongoClient(uri);
       await client.connect();
       db = client.db("test");
-      
+
       // Create storage
       storage = new MongoDBStorage(db);
       return storage;
@@ -69,7 +69,7 @@ export function createMongoDBStorageFactory(): StorageFactory {
       } catch (error) {
         // Ignore errors during cleanup
       }
-      
+
       try {
         if (client) {
           await client.close();
@@ -77,7 +77,7 @@ export function createMongoDBStorageFactory(): StorageFactory {
       } catch (error) {
         // Ignore client close errors
       }
-      
+
       try {
         if (mongod) {
           await mongod.stop();
@@ -101,7 +101,7 @@ export function createSQLiteStorageFactory(): StorageFactory {
     async create() {
       // Create in-memory SQLite database
       db = new Database(":memory:");
-      
+
       // Create storage
       storage = new SQLiteStorage(db);
       return storage;
@@ -150,7 +150,7 @@ export async function createStorage(type: StorageType): Promise<{
   }
 
   const storage = await factory.create();
-  
+
   return {
     storage,
     cleanup: async () => {

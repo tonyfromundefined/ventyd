@@ -12,7 +12,7 @@ export class SQLiteStorage implements Storage {
 
   constructor(db: Database.Database) {
     this.db = db;
-    
+
     // Create events table
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS events (
@@ -24,7 +24,7 @@ export class SQLiteStorage implements Storage {
         body TEXT NOT NULL
       )
     `);
-    
+
     // Create indexes for better query performance
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_entity 
@@ -33,7 +33,7 @@ export class SQLiteStorage implements Storage {
       CREATE INDEX IF NOT EXISTS idx_created_at 
       ON events (event_created_at);
     `);
-    
+
     // Prepare statements
     this.insertStmt = this.db.prepare(`
       INSERT INTO events (
@@ -41,7 +41,7 @@ export class SQLiteStorage implements Storage {
         event_name, event_created_at, body
       ) VALUES (?, ?, ?, ?, ?, ?)
     `);
-    
+
     this.selectStmt = this.db.prepare(`
       SELECT * FROM events 
       WHERE entity_name = ? AND entity_id = ?
@@ -59,12 +59,9 @@ export class SQLiteStorage implements Storage {
     entityName: string;
     entityId: string;
   }): Promise<z.infer<BaseSchema["event"]>[]> {
-    const rows = this.selectStmt.all(
-      args.entityName,
-      args.entityId
-    ) as any[];
+    const rows = this.selectStmt.all(args.entityName, args.entityId) as any[];
 
-    return rows.map(row => ({
+    return rows.map((row) => ({
       eventId: row.event_id,
       entityName: row.entity_name,
       entityId: row.entity_id,
@@ -81,7 +78,7 @@ export class SQLiteStorage implements Storage {
     events: z.infer<BaseSchema["event"]>[];
   }): Promise<void> {
     if (args.events.length === 0) return;
-    
+
     const insertMany = this.db.transaction((events: any[]) => {
       for (const event of events) {
         this.insertStmt.run(
@@ -90,11 +87,11 @@ export class SQLiteStorage implements Storage {
           event.entityId,
           event.eventName,
           event.eventCreatedAt,
-          JSON.stringify(event.body)
+          JSON.stringify(event.body),
         );
       }
     });
-    
+
     insertMany(args.events);
   }
 
@@ -109,9 +106,11 @@ export class SQLiteStorage implements Storage {
    * Utility method to get all stored events (useful for debugging tests).
    */
   async getAllEvents(): Promise<z.infer<BaseSchema["event"]>[]> {
-    const rows = this.db.prepare("SELECT * FROM events ORDER BY event_created_at ASC").all() as any[];
-    
-    return rows.map(row => ({
+    const rows = this.db
+      .prepare("SELECT * FROM events ORDER BY event_created_at ASC")
+      .all() as any[];
+
+    return rows.map((row) => ({
       eventId: row.event_id,
       entityName: row.entity_name,
       entityId: row.entity_id,
@@ -125,10 +124,12 @@ export class SQLiteStorage implements Storage {
    * Utility method to get the count of events for a specific entity.
    */
   async getEventCount(entityName: string, entityId: string): Promise<number> {
-    const result = this.db.prepare(
-      "SELECT COUNT(*) as count FROM events WHERE entity_name = ? AND entity_id = ?"
-    ).get(entityName, entityId) as any;
-    
+    const result = this.db
+      .prepare(
+        "SELECT COUNT(*) as count FROM events WHERE entity_name = ? AND entity_id = ?",
+      )
+      .get(entityName, entityId) as any;
+
     return result.count;
   }
 

@@ -22,7 +22,7 @@ describe("Event Sourcing Scenarios", () => {
 
       // Simulate a user's lifecycle over time
       const userId = "user-timeline";
-      
+
       // Day 1: User signs up
       const user = new User({
         entityId: userId,
@@ -35,7 +35,7 @@ describe("Event Sourcing Scenarios", () => {
 
       // Day 2: User updates profile
       const user2 = await repository.findOne({ entityId: userId });
-      user2?.updateProfile({ 
+      user2?.updateProfile({
         nickname: "TimeTraveler",
         bio: "Exploring event sourcing",
       });
@@ -53,15 +53,15 @@ describe("Event Sourcing Scenarios", () => {
 
       // Now, let's replay the entire history
       const finalUser = await repository.findOne({ entityId: userId });
-      
+
       expect(finalUser?.nickname).toBe("TimeTraveler");
       expect(finalUser?.bio).toBe("Exploring event sourcing");
       expect(finalUser?.isDeleted).toBe(false);
-      
+
       // Verify complete event history
       const allEvents = storage.getAllEvents();
       expect(allEvents.length).toBe(4);
-      expect(allEvents.map(e => (e as any).eventName)).toEqual([
+      expect(allEvents.map((e) => (e as any).eventName)).toEqual([
         "user:created",
         "user:profileUpdated",
         "user:deleted",
@@ -107,8 +107,8 @@ describe("Event Sourcing Scenarios", () => {
         storage,
       });
 
-      const migratedUser = await repository.findOne({ 
-        entityId: "legacy-user" 
+      const migratedUser = await repository.findOne({
+        entityId: "legacy-user",
       });
 
       expect(migratedUser?.nickname).toBe("LegacyUser");
@@ -128,9 +128,7 @@ describe("Event Sourcing Scenarios", () => {
       const order = new Order({
         body: {
           customerId: "customer-comp",
-          items: [
-            { productId: "expensive-item", quantity: 1, price: 9999.99 },
-          ],
+          items: [{ productId: "expensive-item", quantity: 1, price: 9999.99 }],
         },
       });
 
@@ -140,18 +138,20 @@ describe("Event Sourcing Scenarios", () => {
       await repository.commit(order);
 
       // Later: Customer reports fraud, need to compensate
-      const fraudOrder = await repository.findOne({ 
-        entityId: order.entityId 
+      const fraudOrder = await repository.findOne({
+        entityId: order.entityId,
       });
       fraudOrder?.cancel("Fraudulent transaction detected", "system");
       await repository.commit(fraudOrder!);
 
       // Verify compensation
-      const finalOrder = await repository.findOne({ 
-        entityId: order.entityId 
+      const finalOrder = await repository.findOne({
+        entityId: order.entityId,
       });
       expect(finalOrder?.status).toBe("cancelled");
-      expect(finalOrder?.state.cancelReason).toBe("Fraudulent transaction detected");
+      expect(finalOrder?.state.cancelReason).toBe(
+        "Fraudulent transaction detected",
+      );
 
       // All original events are preserved
       const events = storage.getAllEvents();
@@ -171,7 +171,7 @@ describe("Event Sourcing Scenarios", () => {
               name: entity.nickname,
               timestamp: new Date().toISOString(),
             },
-            events: events.map(e => ({
+            events: events.map((e) => ({
               type: e.eventName,
               timestamp: e.eventCreatedAt,
             })),
@@ -266,29 +266,29 @@ describe("Event Sourcing Scenarios", () => {
       // Add more items
       cart.addItem("keyboard", 1, 79.99);
       cart.addItem("monitor", 2, 399.99);
-      
+
       // Save draft order (abandoned cart)
       await orderRepo.commit(cart);
-      
+
       expect(cart.status).toBe("draft");
       expect(cart.totalAmount).toBe(2209.95);
 
       // Simulate cart recovery after 24 hours
-      const recoveredCart = await orderRepo.findOne({ 
-        entityId: "cart-001" 
+      const recoveredCart = await orderRepo.findOne({
+        entityId: "cart-001",
       });
-      
+
       // Customer removes expensive items
       recoveredCart?.removeItem("laptop");
       recoveredCart?.removeItem("monitor");
-      
+
       // And completes purchase with remaining items
       recoveredCart?.confirm("paypal");
       await orderRepo.commit(recoveredCart!);
 
       // Verify final state
-      const finalOrder = await orderRepo.findOne({ 
-        entityId: "cart-001" 
+      const finalOrder = await orderRepo.findOne({
+        entityId: "cart-001",
       });
       expect(finalOrder?.status).toBe("confirmed");
       expect(finalOrder?.totalAmount).toBeCloseTo(109.98, 2);
@@ -342,7 +342,9 @@ describe("Event Sourcing Scenarios", () => {
       // Verify complete history is preserved
       const finalUser = await userRepo.findOne({ entityId: "lifecycle-user" });
       expect(finalUser?.nickname).toBe("JohnTheArchitect");
-      expect(finalUser?.bio).toBe("Back and ready to code! Senior Architect now.");
+      expect(finalUser?.bio).toBe(
+        "Back and ready to code! Senior Architect now.",
+      );
       expect(finalUser?.isDeleted).toBe(false);
 
       // Check event count
@@ -363,10 +365,10 @@ describe("Event Sourcing Scenarios", () => {
           body: {
             customerId: `customer-${i}`,
             items: [
-              { 
-                productId: `product-${i}`, 
-                quantity: i + 1, 
-                price: (i + 1) * 10 
+              {
+                productId: `product-${i}`,
+                quantity: i + 1,
+                price: (i + 1) * 10,
               },
             ],
           },
@@ -446,9 +448,9 @@ describe("Event Sourcing Scenarios", () => {
         entityName: "user",
         entityId: user.entityId,
       });
-      
+
       expect(events.length).toBe(11); // 1 created + 10 updates
-      
+
       // Verify chronological order
       for (let i = 1; i < events.length; i++) {
         const prev = new Date((events[i - 1] as any).eventCreatedAt);
@@ -468,9 +470,7 @@ describe("Event Sourcing Scenarios", () => {
           entityName: "order",
           body: {
             customerId: "cust-recon",
-            items: [
-              { productId: "A", quantity: 1, price: 100 },
-            ],
+            items: [{ productId: "A", quantity: 1, price: 100 }],
           },
         },
         {
@@ -515,8 +515,8 @@ describe("Event Sourcing Scenarios", () => {
         storage,
       });
 
-      const reconstructed = await orderRepo.findOne({ 
-        entityId: "order-reconstruct" 
+      const reconstructed = await orderRepo.findOne({
+        entityId: "order-reconstruct",
       });
 
       // Verify final state after all events

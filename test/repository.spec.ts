@@ -296,11 +296,11 @@ describe("Repository Integration Tests", () => {
       deliveredOrder.confirm("bank");
       deliveredOrder.ship("TRACK789", "DHL");
       deliveredOrder.markAsDelivered();
-      
+
       expect(() => {
         deliveredOrder.cancel("Too late", "customer");
       }).toThrow("Cannot cancel order in delivered status");
-      
+
       await repository.commit(deliveredOrder);
     });
   });
@@ -329,7 +329,7 @@ describe("Repository Integration Tests", () => {
       const retrievedUser = await repository.findOne({
         entityId: user.entityId,
       });
-      
+
       expect(retrievedUser?.nickname).toBe("EmptyCommitTest");
     });
 
@@ -351,14 +351,14 @@ describe("Repository Integration Tests", () => {
           });
           await repository.commit(user);
           return user.entityId;
-        })()
+        })(),
       );
 
       const userIds = await Promise.all(userPromises);
 
       // Retrieve all users concurrently
       const retrievalPromises = userIds.map((id) =>
-        repository.findOne({ entityId: id })
+        repository.findOne({ entityId: id }),
       );
       const users = await Promise.all(retrievalPromises);
 
@@ -405,12 +405,16 @@ describe("Repository Integration Tests", () => {
       await orderRepository.commit(order);
 
       // Storage should keep them separate based on entityName
-      const retrievedUser = await userRepository.findOne({ entityId: sharedId });
-      const retrievedOrder = await orderRepository.findOne({ entityId: sharedId });
+      const retrievedUser = await userRepository.findOne({
+        entityId: sharedId,
+      });
+      const retrievedOrder = await orderRepository.findOne({
+        entityId: sharedId,
+      });
 
       expect(retrievedUser?.nickname).toBe("TestUser");
       expect(retrievedOrder?.customerId).toBe("customer-999");
-      
+
       // Verify storage has both entities
       expect(storage.getEventCount("user", sharedId)).toBe(1);
       expect(storage.getEventCount("order", sharedId)).toBe(1);
