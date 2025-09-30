@@ -27,6 +27,7 @@
 
     // Module
     "module": "ESNext",
-    "moduleResolution": "Bundler"
+    "moduleResolution": "Bundler",
+    "types": ["vitest/globals"]
   }
 }

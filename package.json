@@ -12,7 +12,8 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "bunchee",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "test": "vitest run ./src"
   },
   "dependencies": {
     "zod": "^4.1.11"
@@ -21,7 +22,8 @@
     "@biomejs/biome": "^2.2.4",
     "@types/node": "^24.5.2",
     "bunchee": "^6.6.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   },
   "packageManager": "yarn@4.10.3"
 }

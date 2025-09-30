@@ -29,8 +29,8 @@ export function Entity<
     // ----------------------
     // biome-ignore lint/suspicious/noExplicitAny: initial state is null
     " $$state": z.infer<DefinedSchema["state"]> = null as any;
+    " $$queuedEvents": z.infer<DefinedSchema["event"]>[] = [];
     " $$reducer": Reducer;
-    " $$queuedEvents": z.infer<DefinedSchema["event"]>[];
 
     // ----------------------
     // constructor
