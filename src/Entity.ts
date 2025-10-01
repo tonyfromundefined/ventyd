@@ -6,25 +6,80 @@ type InitialEventOf<Schema extends BaseSchema> = z.infer<
   Schema["eventMap"][Schema[" $$initialEventName"]]
 >;
 
+/**
+ * Internal interface defining the structure of an Entity instance.
+ *
+ * @internal
+ *
+ * @remarks
+ * This interface is marked as internal and should not be directly implemented by consumers.
+ * Use the `Entity()` factory function to create entity classes.
+ *
+ * Properties prefixed with ` $$` are considered private implementation details
+ * and should not be accessed directly by consumers.
+ */
 export interface $$IEntity<Schema extends BaseSchema> {
   // ----------------------
   // public properties
   // ----------------------
+
+  /**
+   * The canonical name of this entity type.
+   * This value is used for event namespacing and storage isolation.
+   */
   entityName: Schema[" $$entityName"];
+
+  /**
+   * The unique identifier for this entity instance.
+   * Once set, this value is immutable throughout the entity's lifecycle.
+   */
   entityId: string;
+
+  /**
+   * The current state of the entity, computed from all applied events.
+   *
+   * @readonly
+   * @throws {Error} If the entity has not been initialized
+   */
   get state(): z.infer<Schema["state"]>;
 
   // ----------------------
   // private properties
   // ----------------------
+
+  /** @internal */
   " $$state": z.infer<Schema["state"]>;
+  /** @internal */
   " $$schema": Schema;
+  /** @internal */
   " $$queuedEvents": z.infer<Schema["event"]>[];
+  /** @internal */
   " $$reducer": Reducer<Schema>;
 
   // ----------------------
   // public methods
   // ----------------------
+
+  /**
+   * Dispatches an event to update the entity's state.
+   *
+   * @typeParam EventName - The type of event being dispatched
+   * @param eventName - The fully-qualified event name (e.g., "user:created")
+   * @param body - The event payload conforming to the event's schema
+   *
+   * @remarks
+   * Events are queued internally and only persisted when the repository's
+   * commit method is called. This enables batching multiple state transitions
+   * in a single transaction.
+   *
+   * @example
+   * ```typescript
+   * this.dispatch("user:profileUpdated", {
+   *   nickname: "NewName",
+   *   bio: "Updated bio"
+   * });
+   * ```
+   */
   dispatch: <EventName extends z.infer<Schema["event"]>["eventName"]>(
     eventName: EventName,
     body: z.infer<Schema["eventMap"][EventName]>["body"],
@@ -33,10 +88,54 @@ export interface $$IEntity<Schema extends BaseSchema> {
   // ----------------------
   // private methods
   // ----------------------
+
+  /** @internal */
   " $$flush": () => void;
+  /** @internal */
   " $$hydrate": (events: z.infer<Schema["event"]>[]) => void;
 }
 
+/**
+ * Creates an Entity class with event sourcing capabilities.
+ *
+ * @typeParam Schema - The schema defining the entity's structure and event types
+ * @param schema - The schema instance created with `defineSchema()`
+ * @param reducer - The reducer function created with `defineReducer()`
+ * @returns A constructor function for creating entity instances
+ *
+ * @remarks
+ * The Entity factory is the cornerstone of the event sourcing system. It creates
+ * classes that maintain their state through an append-only event log, ensuring
+ * complete auditability and the ability to reconstruct state at any point in time.
+ *
+ * @example
+ * ```typescript
+ * // Define your entity class
+ * class User extends Entity(userSchema, userReducer) {
+ *   updateProfile(updates: { nickname?: string; bio?: string }) {
+ *     this.dispatch("user:profileUpdated", updates);
+ *   }
+ * }
+ *
+ * // Create a new instance
+ * const user = new User({
+ *   body: {
+ *     email: "user@example.com",
+ *     nickname: "JohnDoe"
+ *   }
+ * });
+ *
+ * // Dispatch events to update state
+ * user.updateProfile({
+ *   bio: "Software Engineer"
+ * });
+ *
+ * // Access current state
+ * console.log(user.state); // { email: "...", nickname: "...", bio: "..." }
+ * ```
+ *
+ * @since 1.0.0
+ */
 export function Entity<Schema extends BaseSchema>(
   schema: Schema,
   reducer: Reducer<Schema>,
@@ -68,6 +167,36 @@ export function Entity<Schema extends BaseSchema>(
     // ----------------------
     // constructor
     // ----------------------
+
+    /**
+     * Creates a new entity instance or prepares an empty instance for hydration.
+     *
+     * @param args - Optional configuration for entity initialization
+     * @param args.entityId - Custom entity ID (auto-generated if not provided)
+     * @param args.body - Initial event payload for new entities
+     *
+     * @remarks
+     * When `body` is provided, the constructor automatically dispatches the
+     * initial event defined in the schema. This ensures new entities always
+     * start with a valid initial state.
+     *
+     * @example
+     * ```typescript
+     * // Create new entity with auto-generated ID
+     * const user1 = new User({
+     *   body: { email: "user@example.com", nickname: "John" }
+     * });
+     *
+     * // Create new entity with custom ID
+     * const user2 = new User({
+     *   entityId: "user-123",
+     *   body: { email: "user@example.com", nickname: "Jane" }
+     * });
+     *
+     * // Create empty entity for hydration (used internally by repository)
+     * const user3 = new User();
+     * ```
+     */
     constructor(args?: {
       entityId?: string;
       body?: InitialEventOf<Schema>["body"];
