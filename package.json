@@ -13,7 +13,8 @@
   "scripts": {
     "build": "bunchee",
     "format": "biome format --write",
-    "test": "vitest run ./test"
+    "test": "vitest run ./test",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "zod": "^4.1.11"
