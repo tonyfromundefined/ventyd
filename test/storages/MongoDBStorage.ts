@@ -1,5 +1,5 @@
+import type { Collection, Db } from "mongodb";
 import type z from "zod";
-import type { Collection, Db, MongoClient } from "mongodb";
 import type { BaseSchema } from "../../src/defineSchema";
 import type { Storage } from "../../src/defineStorage";
 

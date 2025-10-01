@@ -1,5 +1,5 @@
-import type z from "zod";
 import type Database from "better-sqlite3";
+import type z from "zod";
 import type { BaseSchema } from "../../src/defineSchema";
 import type { Storage } from "../../src/defineStorage";
 

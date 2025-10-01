@@ -1,9 +1,8 @@
-import { describe, test, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 import { createRepository } from "../../src/createRepository";
-import { InMemoryStorage } from "../storages/InMemoryStorage";
-import { User, userSchema } from "../entities/User";
 import { Order, orderSchema } from "../entities/Order";
-import type { Plugin } from "../../src/Plugin";
+import { User, userSchema } from "../entities/User";
+import { InMemoryStorage } from "../storages/InMemoryStorage";
 
 describe("Event Sourcing Scenarios", () => {
   let storage: InMemoryStorage;
