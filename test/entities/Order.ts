@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { defineSchema } from "../../src/defineSchema";
 import { defineReducer } from "../../src/defineReducer";
+import { defineSchema } from "../../src/defineSchema";
 import { Entity } from "../../src/Entity";
 
 /**
@@ -18,12 +18,12 @@ export const orderSchema = defineSchema("order", {
         }),
       ),
     }),
-    itemAdded: z.object({
+    item_added: z.object({
       productId: z.string(),
       quantity: z.number().positive(),
       price: z.number().positive(),
     }),
-    itemRemoved: z.object({
+    item_removed: z.object({
       productId: z.string(),
     }),
     confirmed: z.object({
@@ -87,7 +87,7 @@ export const orderReducer = defineReducer(orderSchema, (prevState, event) => {
         cancelReason: undefined,
       };
     }
-    case "order:itemAdded": {
+    case "order:item_added": {
       const newItem = {
         productId: event.body.productId,
         quantity: event.body.quantity,
@@ -97,7 +97,8 @@ export const orderReducer = defineReducer(orderSchema, (prevState, event) => {
         (item) => item.productId === event.body.productId,
       );
 
-      let updatedItems;
+      let updatedItems = [];
+
       if (existingItemIndex >= 0) {
         updatedItems = [...prevState.items];
         const existingItem = updatedItems[existingItemIndex];
@@ -119,7 +120,7 @@ export const orderReducer = defineReducer(orderSchema, (prevState, event) => {
         totalAmount,
       };
     }
-    case "order:itemRemoved": {
+    case "order:item_removed": {
       const updatedItems = prevState.items.filter(
         (item) => item.productId !== event.body.productId,
       );
@@ -213,7 +214,7 @@ export class Order extends Entity(orderSchema, orderReducer) {
       throw new Error(`Cannot modify items in ${this.state.status} status`);
     }
 
-    this.dispatch("order:itemAdded", { productId, quantity, price });
+    this.dispatch("order:item_added", { productId, quantity, price });
   }
 
   removeItem(productId: string) {
@@ -226,7 +227,7 @@ export class Order extends Entity(orderSchema, orderReducer) {
       throw new Error(`Item ${productId} not found in order`);
     }
 
-    this.dispatch("order:itemRemoved", { productId });
+    this.dispatch("order:item_removed", { productId });
   }
 
   confirm(paymentMethod: "card" | "paypal" | "bank") {

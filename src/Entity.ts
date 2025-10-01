@@ -74,7 +74,7 @@ export interface $$IEntity<Schema extends BaseSchema> {
    *
    * @example
    * ```typescript
-   * this.dispatch("user:profileUpdated", {
+   * this.dispatch("user:profile_updated", {
    *   nickname: "NewName",
    *   bio: "Updated bio"
    * });
@@ -113,7 +113,7 @@ export interface $$IEntity<Schema extends BaseSchema> {
  * // Define your entity class
  * class User extends Entity(userSchema, userReducer) {
  *   updateProfile(updates: { nickname?: string; bio?: string }) {
- *     this.dispatch("user:profileUpdated", updates);
+ *     this.dispatch("user:profile_updated", updates);
  *   }
  * }
  *

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { defineSchema } from "../../src/defineSchema";
 import { defineReducer } from "../../src/defineReducer";
+import { defineSchema } from "../../src/defineSchema";
 import { Entity } from "../../src/Entity";
 
 /**
@@ -12,7 +12,7 @@ export const userSchema = defineSchema("user", {
       nickname: z.string(),
       email: z.string().email(),
     }),
-    profileUpdated: z.object({
+    profile_updated: z.object({
       nickname: z.string().optional(),
       bio: z.string().optional(),
     }),
@@ -43,7 +43,7 @@ export const userReducer = defineReducer(userSchema, (prevState, event) => {
         deletedAt: null,
       };
     }
-    case "user:profileUpdated": {
+    case "user:profile_updated": {
       return {
         ...prevState,
         ...(event.body.nickname && { nickname: event.body.nickname }),
@@ -99,7 +99,7 @@ export class User extends Entity(userSchema, userReducer) {
       throw new Error("Cannot update profile of deleted user");
     }
 
-    this.dispatch("user:profileUpdated", updates);
+    this.dispatch("user:profile_updated", updates);
   }
 
   delete(reason?: string) {

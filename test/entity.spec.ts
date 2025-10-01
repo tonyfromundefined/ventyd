@@ -1,10 +1,10 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import { defineSchema } from "../src/defineSchema";
 import { defineReducer } from "../src/defineReducer";
+import { defineSchema } from "../src/defineSchema";
 import { Entity } from "../src/Entity";
-import { User } from "./entities/User";
 import { Order } from "./entities/Order";
+import { User } from "./entities/User";
 
 describe("Entity Unit Tests", () => {
   describe("Entity Initialization", () => {
@@ -177,7 +177,7 @@ describe("Entity Unit Tests", () => {
         },
         {
           eventId: "evt-2",
-          eventName: "user:profileUpdated",
+          eventName: "user:profile_updated",
           eventCreatedAt: "2024-01-01T01:00:00Z",
           entityId: "user-789",
           entityName: "user",

@@ -229,7 +229,7 @@ getAllStorageFactories().forEach((factory) => {
         expect(events.length).toBe(4);
         expect(events.map((e) => (e as any).eventName)).toEqual([
           "user:created",
-          "user:profileUpdated",
+          "user:profile_updated",
           "user:deleted",
           "user:restored",
         ]);
@@ -251,7 +251,7 @@ getAllStorageFactories().forEach((factory) => {
           },
           {
             eventId: "evt-2",
-            eventName: "order:itemAdded",
+            eventName: "order:item_added",
             eventCreatedAt: "2024-01-01T11:00:00Z",
             entityId: "order-reconstruct",
             entityName: "order",
@@ -263,7 +263,7 @@ getAllStorageFactories().forEach((factory) => {
           },
           {
             eventId: "evt-3",
-            eventName: "order:itemRemoved",
+            eventName: "order:item_removed",
             eventCreatedAt: "2024-01-01T12:00:00Z",
             entityId: "order-reconstruct",
             entityName: "order",
@@ -319,7 +319,7 @@ getAllStorageFactories().forEach((factory) => {
           },
           {
             eventId: "old-2",
-            eventName: "user:profileUpdated",
+            eventName: "user:profile_updated",
             eventCreatedAt: "2023-06-01T00:00:00Z",
             entityId: "legacy-user",
             entityName: "user",
@@ -482,7 +482,7 @@ getAllStorageFactories().forEach((factory) => {
         expect(auditLog[0]?.entity.name).toBe("AuditedUser");
         expect(auditLog[0]?.events.length).toBe(2);
         expect(auditLog[0]?.events[0]?.type).toBe("user:created");
-        expect(auditLog[0]?.events[1]?.type).toBe("user:profileUpdated");
+        expect(auditLog[0]?.events[1]?.type).toBe("user:profile_updated");
       });
 
       test("should execute multiple plugins in sequence", async () => {

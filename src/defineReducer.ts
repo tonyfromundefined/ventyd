@@ -50,7 +50,7 @@ export type Reducer<Schema extends BaseSchema> = (
  *
  *   // Handle state transitions
  *   switch (event.eventName) {
- *     case "user:profileUpdated":
+ *     case "user:profile_updated":
  *       return {
  *         ...prevState,
  *         nickname: event.body.nickname ?? prevState.nickname,
@@ -82,7 +82,7 @@ export type Reducer<Schema extends BaseSchema> = (
  *
  * ### Computed Properties
  * ```typescript
- * case "order:itemAdded":
+ * case "order:item_added":
  *   const newItems = [...prevState.items, event.body];
  *   return {
  *     ...prevState,
@@ -95,8 +95,8 @@ export type Reducer<Schema extends BaseSchema> = (
  *
  * ### Event Versioning
  * ```typescript
- * case "user:profileUpdated":
- * case "user:profileUpdated:v2":
+ * case "user:profile_updated":
+ * case "user:profile_updated:v2":
  *   // Handle multiple versions of the same event
  *   return handleProfileUpdate(prevState, event);
  * ```
