@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 import type { BaseSchema } from "./defineSchema";
 import type { Storage } from "./defineStorage";
 import type { $$IEntity } from "./Entity";
@@ -155,7 +155,11 @@ export function createRepository<
           entityName: entityName,
           entityId: entityId,
         })
-        .then((x) => x as IEvent[]);
+        .then((x) => {
+          // validate events from storage using the schema
+          const EventArraySchema = z.array(args.schema.event);
+          return EventArraySchema.parse(x) as IEvent[];
+        });
 
       if (events.length === 0) {
         return null;
@@ -179,9 +183,23 @@ export function createRepository<
       // 3. flush queued events
       entity[" $$flush"]();
 
-      // 4. trigger plugins
+      // 4. trigger plugins (independent execution with error isolation)
+      const pluginErrors: Array<{ error: unknown }> = [];
+
       for (const plugin of args.plugins ?? []) {
-        await plugin.onCommited({ entity, events: queuedEvents });
+        try {
+          await plugin.onCommited({ entity, events: queuedEvents });
+        } catch (error) {
+          // Log error but continue with other plugins
+          pluginErrors.push({ error });
+          console.error(`Plugin execution failed:`, error);
+        }
+      }
+
+      // Optionally, you can handle accumulated plugin errors here
+      // For example, emit a warning event or log to monitoring service
+      if (pluginErrors.length > 0) {
+        console.warn(`${pluginErrors.length} plugin(s) failed during commit`);
       }
     },
   };

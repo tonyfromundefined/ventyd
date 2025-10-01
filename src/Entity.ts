@@ -139,7 +139,12 @@ export interface $$IEntity<Schema extends BaseSchema> {
 export function Entity<Schema extends BaseSchema>(
   schema: Schema,
   reducer: Reducer<Schema>,
+  options?: {
+    maxQueuedEvents?: number;
+  },
 ) {
+  const MAX_QUEUED_EVENTS = options?.maxQueuedEvents ?? 10000; // Default to 10000 events
+
   return class $$Entity implements $$IEntity<Schema> {
     // ----------------------
     // public properties
@@ -207,20 +212,25 @@ export function Entity<Schema extends BaseSchema>(
       const initialEventBodySchema =
         schema[" $$eventBodyMap"][initialEventName];
 
-      // 1. initialize entity
-      const generateId = schema[" $$generateId"];
-      this.entityId = args?.entityId ?? generateId();
-
-      // 2. dispatch initial event
+      // 1. validate initial event body if provided
       if (args?.body) {
         if (!initialEventBodySchema) {
           throw new Error(
             `Body schema for initial event ${initialEventName} not found`,
           );
         }
+        // Validate body before setting any entity properties
+        initialEventBodySchema.parse(args.body);
+      }
 
+      // 2. initialize entity
+      const generateId = schema[" $$generateId"];
+      this.entityId = args?.entityId ?? generateId();
+
+      // 3. dispatch initial event
+      if (args?.body) {
         const eventName = `${entityName}:${initialEventName}` as const;
-        const body = initialEventBodySchema.parse(args.body);
+        const body = args.body; // Already validated above
 
         this.dispatch(eventName, body);
       }
@@ -238,10 +248,19 @@ export function Entity<Schema extends BaseSchema>(
       const queuedEvents = this[" $$queuedEvents"];
       const reducer = this[" $$reducer"];
       const prevState = this[" $$state"];
+      const generateId = this[" $$schema"][" $$generateId"];
+
+      // Check queue size limit
+      if (queuedEvents.length >= MAX_QUEUED_EVENTS) {
+        throw new Error(
+          `Event queue overflow: maximum ${MAX_QUEUED_EVENTS} uncommitted events exceeded. ` +
+            `Please commit the entity before dispatching more events.`,
+        );
+      }
 
       // 1. create event
       const event = {
-        eventId: crypto.randomUUID(),
+        eventId: generateId(),
         eventName,
         eventCreatedAt: new Date().toISOString(),
         entityId: this.entityId,
