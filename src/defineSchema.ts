@@ -181,16 +181,16 @@ export function defineSchema<
     entityId: z.string(),
   });
 
-  // 1. create event schema map
-  const eventSchemaMap = eventBodySchemaEntries.reduce(
-    (acc, [eventName, body]) => ({
-      // biome-ignore lint/performance/noAccumulatingSpread: biome is dumb
-      ...acc,
-      [`${entityName}:${eventName}`]: BaseEventSchema.extend({
-        eventName: z.literal(`${entityName}:${eventName}`),
+  // 1. create event schema map (optimized without spread)
+  const eventSchemaMap = eventBodySchemaEntries.reduce<ISchemaMap>(
+    (acc, [eventName, body]) => {
+      const key = `${entityName}:${eventName}` as const;
+      acc[key as keyof ISchemaMap] = BaseEventSchema.extend({
+        eventName: z.literal(key),
         body,
-      }),
-    }),
+      }) as ISchemaMap[keyof ISchemaMap];
+      return acc;
+    },
     {} as ISchemaMap,
   );
 

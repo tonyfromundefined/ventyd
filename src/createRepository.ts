@@ -150,16 +150,14 @@ export function createRepository<
       const Entity = args.entity;
 
       // 1. query events by entity ID
-      const events = await args.storage
-        .getEventsByEntityId({
-          entityName: entityName,
-          entityId: entityId,
-        })
-        .then((x) => {
-          // validate events from storage using the schema
-          const EventArraySchema = z.array(args.schema.event);
-          return EventArraySchema.parse(x) as IEvent[];
-        });
+      const rawEvents = await args.storage.getEventsByEntityId({
+        entityName: entityName,
+        entityId: entityId,
+      });
+
+      // validate events from storage using the schema
+      const EventArraySchema = z.array(args.schema.event);
+      const events = EventArraySchema.parse(rawEvents) as IEvent[];
 
       if (events.length === 0) {
         return null;

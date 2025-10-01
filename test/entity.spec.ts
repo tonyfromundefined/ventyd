@@ -78,8 +78,13 @@ describe("Entity Unit Tests", () => {
       const entity1 = new TestEntity({ body: { value: "first" } });
       const entity2 = new TestEntity({ body: { value: "second" } });
 
+      // generateId is called twice for entity1: once for entityId, once for the initial event's eventId
       expect(entity1.entityId).toBe("test-1000");
-      expect(entity2.entityId).toBe("test-1001");
+      expect(entity1[" $$queuedEvents"][0]?.eventId).toBe("test-1001");
+
+      // generateId is called twice for entity2: once for entityId, once for the initial event's eventId
+      expect(entity2.entityId).toBe("test-1002");
+      expect(entity2[" $$queuedEvents"][0]?.eventId).toBe("test-1003");
     });
   });
 
