@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
+
 import type { Collection, Db } from "mongodb";
 import type z from "zod";
 import type { BaseSchema } from "../../src/defineSchema";
@@ -12,10 +14,6 @@ export class MongoDBStorage implements Storage {
 
   constructor(db: Db) {
     this.eventsCollection = db.collection("events");
-
-    // Create indexes for better query performance
-    this.eventsCollection.createIndex({ entityName: 1, entityId: 1 });
-    this.eventsCollection.createIndex({ eventCreatedAt: 1 });
   }
 
   /**

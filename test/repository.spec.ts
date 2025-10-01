@@ -1,8 +1,10 @@
-import { describe, test, expect, beforeEach } from "vitest";
+/** biome-ignore-all lint/style/noNonNullAssertion: for testing */
+
+import { beforeEach, describe, expect, test } from "vitest";
 import { createRepository } from "../src/createRepository";
-import { InMemoryStorage } from "./storages/InMemoryStorage";
-import { User, userSchema } from "./entities/User";
 import { Order, orderSchema } from "./entities/Order";
+import { User, userSchema } from "./entities/User";
+import { InMemoryStorage } from "./storages/InMemoryStorage";
 
 describe("Repository Integration Tests", () => {
   let storage: InMemoryStorage;

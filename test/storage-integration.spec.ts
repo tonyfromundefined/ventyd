@@ -321,11 +321,6 @@ getAllStorageFactories().forEach((factory) => {
 
         expect(retrieved?.bio).toBe(`Update number ${numEvents - 1}`);
 
-        // Log performance metrics for each storage type
-        console.log(
-          `[${factory.type}] Commit ${numEvents} events: ${commitTime}ms, Retrieve: ${retrieveTime}ms`,
-        );
-
         // Basic performance expectations (generous for CI environments)
         expect(commitTime).toBeLessThan(5000);
         expect(retrieveTime).toBeLessThan(1000);

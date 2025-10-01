@@ -1,3 +1,6 @@
+/** biome-ignore-all lint/style/noNonNullAssertion: for testing */
+/** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
+
 import { beforeEach, describe, expect, test } from "vitest";
 import { createRepository } from "../../src/createRepository";
 import { Order, orderSchema } from "../entities/Order";

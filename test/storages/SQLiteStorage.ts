@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
+
 import type Database from "better-sqlite3";
 import type z from "zod";
 import type { BaseSchema } from "../../src/defineSchema";
