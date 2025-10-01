@@ -18,7 +18,7 @@ type InitialEventOf<Schema extends BaseSchema> = z.infer<
  * Properties prefixed with ` $$` are considered private implementation details
  * and should not be accessed directly by consumers.
  */
-export interface $$IEntity<Schema extends BaseSchema> {
+export interface $$Entity<Schema extends BaseSchema> {
   // ----------------------
   // public properties
   // ----------------------
@@ -145,7 +145,7 @@ export function Entity<Schema extends BaseSchema>(
 ) {
   const MAX_QUEUED_EVENTS = options?.maxQueuedEvents ?? 10000; // Default to 10000 events
 
-  return class $$Entity implements $$IEntity<Schema> {
+  return class BaseEntity implements $$Entity<Schema> {
     // ----------------------
     // public properties
     // ----------------------
@@ -248,7 +248,7 @@ export function Entity<Schema extends BaseSchema>(
       const queuedEvents = this[" $$queuedEvents"];
       const reducer = this[" $$reducer"];
       const prevState = this[" $$state"];
-      const generateId = this[" $$schema"][" $$generateId"];
+      const generateId = schema[" $$generateId"];
 
       // Check queue size limit
       if (queuedEvents.length >= MAX_QUEUED_EVENTS) {
@@ -287,7 +287,7 @@ export function Entity<Schema extends BaseSchema>(
       type IEvent = z.infer<Schema["event"]>;
       const reducer = this[" $$reducer"];
       const prevState = this[" $$state"];
-      const EventArraySchema = z.array(this[" $$schema"].event);
+      const EventArraySchema = z.array(schema.event);
 
       // 1. validate current state
       if (this[" $$state"] !== null) {

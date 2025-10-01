@@ -1,6 +1,6 @@
 import type z from "zod";
 import type { BaseSchema } from "./defineSchema";
-import type { $$IEntity } from "./Entity";
+import type { $$Entity } from "./Entity";
 
 /**
  * Plugin interface for extending repository functionality with cross-cutting concerns.
@@ -50,7 +50,7 @@ import type { $$IEntity } from "./Entity";
  *
  * @since 1.0.0
  */
-export type Plugin<Entity extends $$IEntity<BaseSchema>> = {
+export type Plugin<Entity extends $$Entity<BaseSchema>> = {
   /**
    * Callback executed after events are successfully committed to storage.
    *
