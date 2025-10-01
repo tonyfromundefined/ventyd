@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/style/noNonNullAssertion: for testing */
+
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
 import { defineReducer } from "../src/defineReducer";
@@ -138,7 +140,7 @@ describe("Entity Unit Tests", () => {
       // Verify timestamp format
       const timestamp = new Date(event!.eventCreatedAt);
       expect(timestamp).toBeInstanceOf(Date);
-      expect(isNaN(timestamp.getTime())).toBe(false);
+      expect(Number.isNaN(timestamp.getTime())).toBe(false);
     });
 
     test("should flush queued events", () => {

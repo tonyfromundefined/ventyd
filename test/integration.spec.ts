@@ -808,7 +808,7 @@ getAllStorageFactories().forEach((factory) => {
             entityId: "concurrent-order",
           });
 
-          if (retrieved && retrieved.canModifyItems) {
+          if (retrieved?.canModifyItems) {
             retrieved.addItem(`prod-${i}`, i + 1, (i + 1) * 10);
             await repository.commit(retrieved);
           }
