@@ -32,7 +32,7 @@ import type { $$IEntity } from "./Entity";
  *
  * @example
  * ```typescript
- * class AuditLogPlugin implements Plugin<User> {
+ * const auditLogPlugin: Plugin<User> = {
  *   async onCommited({ entity, events }) {
  *     await auditLog.record({
  *       entityType: "user",
@@ -41,10 +41,10 @@ import type { $$IEntity } from "./Entity";
  *       changes: events.map(e => ({
  *         event: e.eventName,
  *         timestamp: e.eventCreatedAt,
- *         data: e.body
- *       }))
+ *         data: e.body,
+ *       })),
  *     });
- *   }
+ *   },
  * }
  * ```
  *

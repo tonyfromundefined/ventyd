@@ -440,33 +440,27 @@ getAllStorageFactories().forEach((factory) => {
       test("should execute plugins for audit logging", async () => {
         const auditLog: Array<{ entity: any; events: any[] }> = [];
 
-        const auditPlugin = {
-          async onCommited({
-            entity,
-            events,
-          }: {
-            entity: User;
-            events: any[];
-          }) {
-            auditLog.push({
-              entity: {
-                id: entity.entityId,
-                name: entity.nickname,
-                timestamp: new Date().toISOString(),
-              },
-              events: events.map((e) => ({
-                type: e.eventName,
-                timestamp: e.eventCreatedAt,
-              })),
-            });
-          },
-        };
-
         const repository = createRepository({
           entity: User,
           schema: userSchema,
           storage,
-          plugins: [auditPlugin as any],
+          plugins: [
+            {
+              async onCommited({ entity, events }) {
+                auditLog.push({
+                  entity: {
+                    id: entity.entityId,
+                    name: entity.nickname,
+                    timestamp: new Date().toISOString(),
+                  },
+                  events: events.map((e) => ({
+                    type: e.eventName,
+                    timestamp: e.eventCreatedAt,
+                  })),
+                });
+              },
+            },
+          ],
         });
 
         const user = new User({
@@ -508,7 +502,7 @@ getAllStorageFactories().forEach((factory) => {
           entity: Order,
           schema: orderSchema,
           storage,
-          plugins: [plugin1 as any, plugin2 as any, plugin3 as any],
+          plugins: [plugin1, plugin2, plugin3],
         });
 
         const order = new Order({
