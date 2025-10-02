@@ -4,8 +4,8 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { createRepository } from "../src/createRepository";
 import type { Storage } from "../src/defineStorage";
-import { Order, orderSchema } from "./entities/Order";
-import { User, userSchema } from "./entities/User";
+import { Order } from "./entities/Order";
+import { User } from "./entities/User";
 import { getAllStorageFactories } from "./storages";
 
 /**
@@ -42,9 +42,7 @@ getAllStorageFactories().forEach((factory) => {
      */
     describe("1. Basic Operations", () => {
       test("should create and retrieve entities", async () => {
-        const repository = createRepository({
-          entity: User,
-          schema: userSchema,
+        const repository = createRepository(User, {
           storage,
         });
 
@@ -67,9 +65,7 @@ getAllStorageFactories().forEach((factory) => {
       });
 
       test("should return null for non-existent entities", async () => {
-        const repository = createRepository({
-          entity: User,
-          schema: userSchema,
+        const repository = createRepository(User, {
           storage,
         });
 
@@ -81,9 +77,7 @@ getAllStorageFactories().forEach((factory) => {
       });
 
       test("should handle empty commits gracefully", async () => {
-        const repository = createRepository({
-          entity: User,
-          schema: userSchema,
+        const repository = createRepository(User, {
           storage,
         });
 
@@ -106,9 +100,7 @@ getAllStorageFactories().forEach((factory) => {
       });
 
       test("should persist events across multiple commits", async () => {
-        const repository = createRepository({
-          entity: User,
-          schema: userSchema,
+        const repository = createRepository(User, {
           storage,
         });
 
@@ -142,9 +134,7 @@ getAllStorageFactories().forEach((factory) => {
       });
 
       test("should maintain correct event order", async () => {
-        const repository = createRepository({
-          entity: Order,
-          schema: orderSchema,
+        const repository = createRepository(Order, {
           storage,
         });
 
@@ -178,9 +168,7 @@ getAllStorageFactories().forEach((factory) => {
      */
     describe("2. Event Sourcing Core Features", () => {
       test("should support time travel through event history", async () => {
-        const repository = createRepository({
-          entity: User,
-          schema: userSchema,
+        const repository = createRepository(User, {
           storage,
         });
 
@@ -284,9 +272,7 @@ getAllStorageFactories().forEach((factory) => {
 
         await storage.commitEvents({ events: events as any });
 
-        const orderRepo = createRepository({
-          entity: Order,
-          schema: orderSchema,
+        const orderRepo = createRepository(Order, {
           storage,
         });
 
@@ -330,9 +316,7 @@ getAllStorageFactories().forEach((factory) => {
 
         await storage.commitEvents({ events: oldEvents as any });
 
-        const repository = createRepository({
-          entity: User,
-          schema: userSchema,
+        const repository = createRepository(User, {
           storage,
         });
 
@@ -346,9 +330,7 @@ getAllStorageFactories().forEach((factory) => {
       });
 
       test("should preserve chronological event order", async () => {
-        const userRepo = createRepository({
-          entity: User,
-          schema: userSchema,
+        const userRepo = createRepository(User, {
           storage,
         });
 
@@ -392,9 +374,7 @@ getAllStorageFactories().forEach((factory) => {
      */
     describe("3. Advanced Patterns", () => {
       test("should support compensating transactions", async () => {
-        const repository = createRepository({
-          entity: Order,
-          schema: orderSchema,
+        const repository = createRepository(Order, {
           storage,
         });
 
@@ -443,9 +423,7 @@ getAllStorageFactories().forEach((factory) => {
      */
     describe("4. Business Scenarios", () => {
       test("should handle shopping cart lifecycle", async () => {
-        const orderRepo = createRepository({
-          entity: Order,
-          schema: orderSchema,
+        const orderRepo = createRepository(Order, {
           storage,
         });
 
@@ -494,9 +472,7 @@ getAllStorageFactories().forEach((factory) => {
       });
 
       test("should handle user account lifecycle", async () => {
-        const userRepo = createRepository({
-          entity: User,
-          schema: userSchema,
+        const userRepo = createRepository(User, {
           storage,
         });
 
@@ -556,9 +532,7 @@ getAllStorageFactories().forEach((factory) => {
       });
 
       test("should process concurrent orders", async () => {
-        const orderRepo = createRepository({
-          entity: Order,
-          schema: orderSchema,
+        const orderRepo = createRepository(Order, {
           storage,
         });
 
@@ -623,15 +597,11 @@ getAllStorageFactories().forEach((factory) => {
      */
     describe("5. Isolation and Concurrency", () => {
       test("should isolate entities of different types with same ID", async () => {
-        const userRepo = createRepository({
-          entity: User,
-          schema: userSchema,
+        const userRepo = createRepository(User, {
           storage,
         });
 
-        const orderRepo = createRepository({
-          entity: Order,
-          schema: orderSchema,
+        const orderRepo = createRepository(Order, {
           storage,
         });
 
@@ -666,9 +636,7 @@ getAllStorageFactories().forEach((factory) => {
       });
 
       test("should handle concurrent entity creation", async () => {
-        const repository = createRepository({
-          entity: User,
-          schema: userSchema,
+        const repository = createRepository(User, {
           storage,
         });
 
@@ -700,9 +668,7 @@ getAllStorageFactories().forEach((factory) => {
       });
 
       test("should handle concurrent updates on same entity", async () => {
-        const repository = createRepository({
-          entity: Order,
-          schema: orderSchema,
+        const repository = createRepository(Order, {
           storage,
         });
 
@@ -748,9 +714,7 @@ getAllStorageFactories().forEach((factory) => {
      */
     describe("6. Performance Testing", () => {
       test("should handle large number of events efficiently", async () => {
-        const repository = createRepository({
-          entity: User,
-          schema: userSchema,
+        const repository = createRepository(User, {
           storage,
         });
 
@@ -794,9 +758,7 @@ getAllStorageFactories().forEach((factory) => {
     if (factory.type === "mongodb") {
       describe("7. MongoDB-Specific Features", () => {
         test("should utilize indexes for performance", async () => {
-          const repository = createRepository({
-            entity: User,
-            schema: userSchema,
+          const repository = createRepository(User, {
             storage,
           });
 
@@ -820,9 +782,7 @@ getAllStorageFactories().forEach((factory) => {
     if (factory.type === "sqlite") {
       describe("7. SQLite-Specific Features", () => {
         test("should use transactions for batch operations", async () => {
-          const repository = createRepository({
-            entity: Order,
-            schema: orderSchema,
+          const repository = createRepository(Order, {
             storage,
           });
 

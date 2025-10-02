@@ -17,10 +17,10 @@ import type {
  *
  * @since 1.0.0
  */
-export type Reducer<Schema> = (
-  prevState: InferStateFromSchema<Schema>,
-  event: InferEventFromSchema<Schema> | { eventName: "%unknown%" },
-) => InferStateFromSchema<Schema>;
+export type Reducer<$$Schema> = (
+  prevState: InferStateFromSchema<$$Schema>,
+  event: InferEventFromSchema<$$Schema> | { eventName: "%unknown%" },
+) => InferStateFromSchema<$$Schema>;
 
 /**
  * Defines a reducer function for computing entity state from events.
@@ -118,9 +118,9 @@ export type Reducer<Schema> = (
  *
  * @since 1.0.0
  */
-export function defineReducer<Schema>(
-  schema: Schema,
-  fn: Reducer<Schema>,
-): Reducer<Schema> {
+export function defineReducer<$$Schema>(
+  schema: $$Schema,
+  fn: Reducer<$$Schema>,
+): Reducer<$$Schema> {
   return fn;
 }

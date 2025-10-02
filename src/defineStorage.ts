@@ -1,5 +1,9 @@
-import type { SingleEvent } from "./schema-types";
-import type { ZodEmptyObject } from "./util-types";
+import type {
+  EventDefinitionInput,
+  InferEventFromSchema,
+  Schema,
+  StateDefinitionInput,
+} from "./schema-types";
 
 /**
  * Storage interface for persisting and retrieving events.
@@ -19,7 +23,9 @@ import type { ZodEmptyObject } from "./util-types";
  *
  * @since 1.0.0
  */
-export type Storage = {
+export type Storage<
+  $$Schema = Schema<string, EventDefinitionInput, StateDefinitionInput, string>,
+> = {
   /**
    * Retrieves all events for a specific entity.
    *
@@ -36,7 +42,7 @@ export type Storage = {
   getEventsByEntityId: (args: {
     entityName: string;
     entityId: string;
-  }) => Promise<SingleEvent<string, ZodEmptyObject>[]>;
+  }) => Promise<InferEventFromSchema<$$Schema>[]>;
 
   /**
    * Persists a batch of events to storage.
@@ -51,7 +57,7 @@ export type Storage = {
    * partial state transitions.
    */
   commitEvents(args: {
-    events: SingleEvent<string, ZodEmptyObject>[];
+    events: InferEventFromSchema<$$Schema>[];
   }): Promise<void>;
 };
 
@@ -116,6 +122,8 @@ export type Storage = {
  *
  * @since 1.0.0
  */
-export function defineStorage(storage: Storage): Storage {
+export function defineStorage<
+  $$Schema = Schema<string, EventDefinitionInput, StateDefinitionInput, string>,
+>(storage: Storage<$$Schema>): Storage<$$Schema> {
   return storage;
 }

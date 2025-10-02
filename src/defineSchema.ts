@@ -99,28 +99,33 @@ const defaultGenerateId = () => crypto.randomUUID();
  * @since 1.0.0
  */
 export function defineSchema<
-  EntityName extends string,
-  EventDefinition extends EventDefinitionInput,
-  StateDefinition extends StateDefinitionInput,
-  InitialEventName extends Extract<keyof EventDefinition, string>,
+  $$EntityName extends string,
+  $$EventDefinition extends EventDefinitionInput,
+  $$StateDefinition extends StateDefinitionInput,
+  $$InitialEventName extends Extract<keyof $$EventDefinition, string>,
 >(
-  entityName: EntityName,
+  entityName: $$EntityName,
   options: {
-    event: EventDefinition;
-    state: StateDefinition;
-    initialEventName: InitialEventName;
+    event: $$EventDefinition;
+    state: $$StateDefinition;
+    initialEventName: $$InitialEventName;
     generateId?: () => string;
   },
-): Schema<EntityName, EventDefinition, StateDefinition, InitialEventName> {
-  type SingleEventSchemaMap = {
-    [eventName in keyof EventDefinition]: SingleEventSchema<
-      `${EntityName}:${Extract<eventName, string>}`,
-      EventDefinition[eventName]
+): Schema<
+  $$EntityName,
+  $$EventDefinition,
+  $$StateDefinition,
+  $$InitialEventName
+> {
+  type $$SingleEventSchemaMap = {
+    [eventName in keyof $$EventDefinition]: SingleEventSchema<
+      `${$$EntityName}:${Extract<eventName, string>}`,
+      $$EventDefinition[eventName]
     >;
   };
-  type SingleEventSchemaTuple = [
-    ValueOf<SingleEventSchemaMap>,
-    ...ValueOf<SingleEventSchemaMap>[],
+  type $$SingleEventSchemaTuple = [
+    ValueOf<$$SingleEventSchemaMap>,
+    ...ValueOf<$$SingleEventSchemaMap>[],
   ];
 
   const baseEventSchema = z.object({
@@ -135,7 +140,7 @@ export function defineSchema<
       eventName: z.literal(`${entityName}:${eventName}`),
       body,
     }),
-  ) as SingleEventSchemaTuple;
+  ) as $$SingleEventSchemaTuple;
 
   return {
     event: z.discriminatedUnion("eventName", eventSchemas),

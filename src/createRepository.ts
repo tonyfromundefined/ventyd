@@ -1,7 +1,15 @@
 import { z } from "zod";
 import type { Storage } from "./defineStorage";
-import type { $$Entity } from "./Entity";
-import type { ConstructorReturnType } from "./util-types";
+import type {
+  Entity,
+  EntityConstructor,
+  InferSchemaFromEntityConstructor,
+} from "./entity-types";
+import type {
+  InferEntityNameFromSchema,
+  InferEventFromSchema,
+} from "./schema-types";
+import type { ConstructorReturnType, ZodEmptyObject } from "./util-types";
 
 /**
  * Repository interface providing persistence operations for entities.
@@ -15,7 +23,7 @@ import type { ConstructorReturnType } from "./util-types";
  *
  * @since 1.0.0
  */
-export type Repository<E> = {
+export type Repository<$$Entity> = {
   /**
    * Retrieves an entity by its unique identifier.
    *
@@ -35,7 +43,7 @@ export type Repository<E> = {
    * });
    * ```
    */
-  findOne: (args: { entityId: string }) => Promise<E | null>;
+  findOne: (args: { entityId: string }) => Promise<$$Entity | null>;
 
   /**
    * Persists an entity's pending events to storage.
@@ -67,7 +75,7 @@ export type Repository<E> = {
    *
    * @throws Will propagate any errors from the storage layer
    */
-  commit: (entity: E) => Promise<void>;
+  commit: (entity: $$Entity) => Promise<void>;
 };
 
 /**
@@ -119,24 +127,30 @@ export type Repository<E> = {
  * @since 1.0.0
  */
 export function createRepository<
-  Schema extends BaseSchema,
-  EntityConstructor extends new (args?: {
-    entityId?: string;
-  }) => $$Entity<Schema>,
->(args: {
-  schema: Schema;
-  entity: EntityConstructor;
-  storage: Storage;
-}): Repository<ConstructorReturnType<EntityConstructor>> {
+  $$EntityConstructor extends EntityConstructor<
+    InferSchemaFromEntityConstructor<$$EntityConstructor>
+  >,
+>(
+  entity: $$EntityConstructor,
+  args: {
+    storage: Storage<InferSchemaFromEntityConstructor<$$EntityConstructor>>;
+  },
+): Repository<ConstructorReturnType<$$EntityConstructor>> {
+  type $$Schema = InferSchemaFromEntityConstructor<$$EntityConstructor>;
+  type $$Event = InferEventFromSchema<$$Schema>;
+  type $$EntityName = InferEntityNameFromSchema<$$Schema>;
+  type $$ExtendedEntityType = ConstructorReturnType<$$EntityConstructor>;
+
+  // biome-ignore lint/suspicious/noExplicitAny: entity is valid
+  const _schema: any = entity.schema;
+
+  const entityName: $$EntityName = _schema[" $$entityName"];
+  const eventSchema: ZodEmptyObject = _schema.event;
+
+  const MyEntity = entity;
+
   return {
     async findOne({ entityId }) {
-      // 0. prepare
-      type IEntity = ConstructorReturnType<EntityConstructor>;
-      type IEvent = z.infer<Schema["event"]>;
-
-      const entityName = args.schema[" $$entityName"];
-      const Entity = args.entity;
-
       // 1. query events by entity ID
       const rawEvents = await args.storage.getEventsByEntityId({
         entityName: entityName,
@@ -144,22 +158,25 @@ export function createRepository<
       });
 
       // validate events from storage using the schema
-      const EventArraySchema = z.array(args.schema.event);
-      const events = EventArraySchema.parse(rawEvents) as IEvent[];
+      const EventArraySchema = z.array(eventSchema);
+      const events = EventArraySchema.parse(rawEvents) as $$Event[];
 
       if (events.length === 0) {
         return null;
       }
 
       // 2. hydrate entity
-      const entity = new Entity({ entityId }) as IEntity;
+      const entity = new MyEntity({ entityId });
       entity[" $$hydrate"](events);
 
-      return entity;
+      return entity as $$ExtendedEntityType;
     },
     async commit(entity) {
+      // 0. prepare
+      const _entity = entity as Entity<$$Schema>;
+
       // 1. copy queued events
-      const queuedEvents = [...entity[" $$queuedEvents"]];
+      const queuedEvents = [..._entity[" $$queuedEvents"]];
 
       // 2. commit events to storage
       await args.storage.commitEvents({
@@ -167,7 +184,7 @@ export function createRepository<
       });
 
       // 3. flush queued events
-      entity[" $$flush"]();
+      _entity[" $$flush"]();
     },
   };
 }

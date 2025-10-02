@@ -2,7 +2,6 @@ import type z from "zod";
 import type { ZodEmptyObject } from "../util-types";
 import type { EventDefinitionInput } from "./EventDefinitionInput";
 import type { EventSchema } from "./EventSchema";
-import type { SingleEventSchema } from "./SingleEventSchema";
 import type { StateDefinitionInput } from "./StateDefinitionInput";
 import type { StateSchema } from "./StateSchema";
 
