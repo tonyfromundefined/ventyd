@@ -2,7 +2,6 @@ import { z } from "zod";
 import type { BaseSchema } from "./defineSchema";
 import type { Storage } from "./defineStorage";
 import type { $$Entity } from "./Entity";
-import type { Plugin } from "./Plugin";
 import type { ConstructorReturnType } from "./util-types";
 
 /**
@@ -138,7 +137,6 @@ export function createRepository<
   schema: Schema;
   entity: EntityConstructor;
   storage: Storage;
-  plugins?: Plugin<ConstructorReturnType<EntityConstructor>>[];
 }): Repository<ConstructorReturnType<EntityConstructor>> {
   return {
     async findOne({ entityId }) {
@@ -180,25 +178,6 @@ export function createRepository<
 
       // 3. flush queued events
       entity[" $$flush"]();
-
-      // 4. trigger plugins (independent execution with error isolation)
-      const pluginErrors: Array<{ error: unknown }> = [];
-
-      for (const plugin of args.plugins ?? []) {
-        try {
-          await plugin.onCommited({ entity, events: queuedEvents });
-        } catch (error) {
-          // Log error but continue with other plugins
-          pluginErrors.push({ error });
-          console.error(`Plugin execution failed:`, error);
-        }
-      }
-
-      // Optionally, you can handle accumulated plugin errors here
-      // For example, emit a warning event or log to monitoring service
-      if (pluginErrors.length > 0) {
-        console.warn(`${pluginErrors.length} plugin(s) failed during commit`);
-      }
     },
   };
 }
