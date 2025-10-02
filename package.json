@@ -23,9 +23,9 @@
   "scripts": {
     "build": "bunchee",
     "format": "biome format --write",
+    "release": "changeset publish",
     "test": "vitest run ./test",
-    "typecheck": "tsc --noEmit",
-    "release": "changeset publish"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "zod": "^4.1.11"
@@ -42,8 +42,8 @@
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
-  "packageManager": "yarn@4.10.3",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }
