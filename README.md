@@ -1,6 +1,6 @@
 # Ventyd
 
-A TypeScript-first event sourcing library with full type safety, flexible storage backends, and plugin support.
+A TypeScript-first event sourcing library with full type safety and flexible storage backends.
 
 ## Features
 
@@ -8,7 +8,6 @@ A TypeScript-first event sourcing library with full type safety, flexible storag
 - **Multiple Storage Backends**: In-memory, MongoDB, SQLite, and custom storage adapters
 - **Event-Driven Architecture**: Capture all state changes as immutable events
 - **Time Travel**: Reconstruct entity state at any point in history
-- **Plugin System**: Extend functionality with custom plugins
 - **Lightweight**: Minimal dependencies, focused on core functionality
 
 ## Installation
@@ -285,44 +284,6 @@ const storage = defineStorage({
       await eventsCollection.insertMany(events);
     }
   }
-});
-```
-
-## Plugin System
-
-Extend functionality with plugins that react to events:
-
-```typescript
-import { Plugin } from 'ventyd';
-
-// Audit logging plugin
-const auditPlugin: Plugin<User> = {
-  async onCommited({ entity, events }) {
-    console.log(`User ${entity.entityId} modified:`, {
-      nickname: entity.nickname,
-      eventCount: events.length,
-      eventTypes: events.map(e => e.eventName)
-    });
-  }
-};
-
-// Email notification plugin
-const emailPlugin: Plugin<User> = {
-  async onCommited({ entity, events }) {
-    for (const event of events) {
-      if (event.eventName === 'user:created') {
-        await sendWelcomeEmail(entity.email);
-      }
-    }
-  }
-};
-
-// Use plugins with your repository
-const userRepository = createRepository({
-  schema: userSchema,
-  entity: User,
-  storage,
-  plugins: [auditPlugin, emailPlugin]
 });
 ```
 

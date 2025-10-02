@@ -49,7 +49,6 @@ export type Repository<Entity> = {
    * 1. Extracts all queued events from the entity
    * 2. Persists events atomically to the configured storage backend
    * 3. Clears the entity's event queue
-   * 4. Triggers all registered plugins in sequence
    *
    * Events are only persisted if the commit succeeds. In case of failure,
    * the entity's event queue remains intact for retry.
@@ -67,7 +66,7 @@ export type Repository<Entity> = {
    * await userRepository.commit(user);
    * ```
    *
-   * @throws Will propagate any errors from the storage layer or plugins
+   * @throws Will propagate any errors from the storage layer
    */
   commit: (entity: Entity) => Promise<void>;
 };
@@ -79,7 +78,6 @@ export type Repository<Entity> = {
  * @param args.schema - The entity schema created with `defineSchema()`
  * @param args.entity - The entity class created with `class MyEntity extends Entity()`
  * @param args.storage - The storage backend implementation created with `defineStorage()`
- * @param args.plugins - Optional array of plugins for extending functionality
  *
  * @returns A repository instance with type-safe operations
  *
@@ -90,15 +88,12 @@ export type Repository<Entity> = {
  *
  * ```
  * Entity → dispatch() → queuedEvents → commit() → Storage
- *                                              ↓
- *                                           Plugins
  * ```
  *
  *
  * @example
  * ```typescript
  * import { createRepository, Entity, defineSchema } from 'ventyd';
- * import { AuditPlugin, NotificationPlugin } from './plugins';
  * import { MongoDBStorage } from './mongodb-storage';
  *
  * // Define your entity
@@ -108,18 +103,14 @@ export type Repository<Entity> = {
  *   // ...
  * }
  *
- * // Create repository with storage and plugins
+ * // Create repository with storage
  * const userRepository = createRepository({
  *   schema: userSchema,
  *   entity: User,
  *   storage: new MongoDBStorage({
  *     uri: 'mongodb://localhost:27017',
  *     database: 'myapp'
- *   }),
- *   plugins: [
- *     new AuditPlugin(),
- *     new NotificationPlugin()
- *   ]
+ *   })
  * });
  *
  * // Use the repository

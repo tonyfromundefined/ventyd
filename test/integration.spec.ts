@@ -16,7 +16,6 @@ import { getAllStorageFactories } from "./storages";
  * - Entity lifecycle management
  * - Event sourcing patterns
  * - Repository operations
- * - Plugin system
  *
  * Runs against all available storage backends:
  * - InMemory (for development and testing)
@@ -389,7 +388,7 @@ getAllStorageFactories().forEach((factory) => {
 
     /**
      * Section 3: Advanced Patterns
-     * Tests compensating transactions, plugins, and complex scenarios
+     * Tests compensating transactions and complex scenarios
      */
     describe("3. Advanced Patterns", () => {
       test("should support compensating transactions", async () => {
