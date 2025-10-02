@@ -1,89 +1,97 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
 
 import type { Collection, Db } from "mongodb";
-import type z from "zod";
-import type { BaseSchema } from "../../src/defineSchema";
-import type { Storage } from "../../src/defineStorage";
+import { defineStorage } from "../../src/defineStorage";
+
+type BaseEvent = {
+  eventId: string;
+  eventName: `${string}:${string}`;
+  eventCreatedAt: string;
+  entityName: string;
+  entityId: string;
+  body: any;
+};
 
 /**
  * MongoDB storage implementation for event sourcing.
  * This storage uses MongoDB to persist events.
  */
-export class MongoDBStorage implements Storage {
-  private eventsCollection: Collection<z.infer<BaseSchema["event"]>>;
+export const createMongoDBStorage = (db: Db) => {
+  const eventsCollection: Collection<BaseEvent> = db.collection("events");
 
-  constructor(db: Db) {
-    this.eventsCollection = db.collection("events");
-  }
+  const storage = defineStorage({
+    /**
+     * Retrieves all events for a specific entity.
+     */
+    async getEventsByEntityId(args: {
+      entityName: string;
+      entityId: string;
+    }): Promise<BaseEvent[]> {
+      const events = await eventsCollection
+        .find({
+          entityName: args.entityName,
+          entityId: args.entityId,
+        })
+        .sort({ eventCreatedAt: 1 })
+        .toArray();
 
-  /**
-   * Retrieves all events for a specific entity.
-   */
-  async getEventsByEntityId(args: {
-    entityName: string;
-    entityId: string;
-  }): Promise<z.infer<BaseSchema["event"]>[]> {
-    const events = await this.eventsCollection
-      .find({
-        entityName: args.entityName,
-        entityId: args.entityId,
-      })
-      .sort({ eventCreatedAt: 1 })
-      .toArray();
+      // Remove MongoDB's _id field
+      return events.map((event) => {
+        const { _id, ...rest } = event as any;
+        return rest;
+      });
+    },
 
-    // Remove MongoDB's _id field
-    return events.map((event) => {
-      const { _id, ...rest } = event as any;
-      return rest;
-    });
-  }
+    /**
+     * Commits new events to the storage.
+     */
+    async commitEvents(args: { events: BaseEvent[] }): Promise<void> {
+      if (args.events.length === 0) return;
 
-  /**
-   * Commits new events to the storage.
-   */
-  async commitEvents(args: {
-    events: z.infer<BaseSchema["event"]>[];
-  }): Promise<void> {
-    if (args.events.length === 0) return;
+      await eventsCollection.insertMany(args.events as any);
+    },
+  });
 
-    await this.eventsCollection.insertMany(args.events as any);
-  }
+  return {
+    ...storage,
+    /**
+     * Utility method to clear all events (useful for test cleanup).
+     */
+    async clear(): Promise<void> {
+      await eventsCollection.deleteMany({});
+    },
 
-  /**
-   * Utility method to clear all events (useful for test cleanup).
-   */
-  async clear(): Promise<void> {
-    await this.eventsCollection.deleteMany({});
-  }
+    /**
+     * Utility method to get all stored events (useful for debugging tests).
+     */
+    async getAllEvents(): Promise<BaseEvent[]> {
+      const events = await eventsCollection.find({}).toArray();
 
-  /**
-   * Utility method to get all stored events (useful for debugging tests).
-   */
-  async getAllEvents(): Promise<z.infer<BaseSchema["event"]>[]> {
-    const events = await this.eventsCollection.find({}).toArray();
+      // Remove MongoDB's _id field
+      return events.map((event) => {
+        const { _id, ...rest } = event as any;
+        return rest;
+      });
+    },
 
-    // Remove MongoDB's _id field
-    return events.map((event) => {
-      const { _id, ...rest } = event as any;
-      return rest;
-    });
-  }
+    /**
+     * Utility method to get the count of events for a specific entity.
+     */
+    async getEventCount(entityName: string, entityId: string): Promise<number> {
+      return await eventsCollection.countDocuments({
+        entityName,
+        entityId,
+      });
+    },
 
-  /**
-   * Utility method to get the count of events for a specific entity.
-   */
-  async getEventCount(entityName: string, entityId: string): Promise<number> {
-    return await this.eventsCollection.countDocuments({
-      entityName,
-      entityId,
-    });
-  }
+    /**
+     * Close the database connection (useful for cleanup).
+     */
+    async close(): Promise<void> {
+      // The client connection should be managed externally
+      // This is just a placeholder for interface consistency
+    },
+  };
+};
 
-  /**
-   * Close the database connection (useful for cleanup).
-   */
-  async close(): Promise<void> {
-    // The client connection should be managed externally
-    // This is just a placeholder for interface consistency
-  }
-}
+export type MongoDBStorage = ReturnType<typeof createMongoDBStorage>;

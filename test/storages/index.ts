@@ -1,10 +1,10 @@
-import { MongoMemoryServer } from "mongodb-memory-server";
-import { MongoClient, Db } from "mongodb";
 import Database from "better-sqlite3";
-import { InMemoryStorage } from "./InMemoryStorage";
-import { MongoDBStorage } from "./MongoDBStorage";
-import { SQLiteStorage } from "./SQLiteStorage";
+import { type Db, MongoClient } from "mongodb";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import type { Storage } from "../../src/defineStorage";
+import { createInMemoryStorage, type InMemoryStorage } from "./InMemoryStorage";
+import { createMongoDBStorage, type MongoDBStorage } from "./MongoDBStorage";
+import { createSQLiteStorage, type SQLiteStorage } from "./SQLiteStorage";
 
 /**
  * Storage factory for creating different storage implementations.
@@ -26,7 +26,7 @@ export function createInMemoryStorageFactory(): StorageFactory {
   return {
     type: "memory",
     async create() {
-      storage = new InMemoryStorage();
+      storage = createInMemoryStorage();
       return storage;
     },
     async cleanup() {
@@ -57,7 +57,7 @@ export function createMongoDBStorageFactory(): StorageFactory {
       db = client.db("test");
 
       // Create storage
-      storage = new MongoDBStorage(db);
+      storage = createMongoDBStorage(db);
       return storage;
     },
     async cleanup() {
@@ -66,7 +66,7 @@ export function createMongoDBStorageFactory(): StorageFactory {
         if (storage) {
           await storage.clear();
         }
-      } catch (error) {
+      } catch {
         // Ignore errors during cleanup
       }
 
@@ -74,7 +74,7 @@ export function createMongoDBStorageFactory(): StorageFactory {
         if (client) {
           await client.close();
         }
-      } catch (error) {
+      } catch {
         // Ignore client close errors
       }
 
@@ -82,7 +82,7 @@ export function createMongoDBStorageFactory(): StorageFactory {
         if (mongod) {
           await mongod.stop();
         }
-      } catch (error) {
+      } catch {
         // Ignore mongod stop errors
       }
     },
@@ -103,7 +103,7 @@ export function createSQLiteStorageFactory(): StorageFactory {
       db = new Database(":memory:");
 
       // Create storage
-      storage = new SQLiteStorage(db);
+      storage = createSQLiteStorage(db);
       return storage;
     },
     async cleanup() {
