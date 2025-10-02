@@ -10,6 +10,9 @@
     }
   },
   "main": "./dist/index.js",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "bunchee",
     "format": "biome format --write",
