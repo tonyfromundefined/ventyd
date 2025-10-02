@@ -81,9 +81,8 @@ export type Repository<$$Entity> = {
 /**
  * Creates a repository instance for managing entity persistence.
  *
+ * @param entity - The entity class created with `class MyEntity extends Entity()`
  * @param args - Repository configuration
- * @param args.schema - The entity schema created with `defineSchema()`
- * @param args.entity - The entity class created with `class MyEntity extends Entity()`
  * @param args.storage - The storage backend implementation created with `defineStorage()`
  *
  * @returns A repository instance with type-safe operations
@@ -100,24 +99,28 @@ export type Repository<$$Entity> = {
  *
  * @example
  * ```typescript
- * import { createRepository, Entity, defineSchema } from 'ventyd';
- * import { MongoDBStorage } from './mongodb-storage';
+ * import { createRepository, Entity, defineSchema, defineReducer, defineStorage } from 'ventyd';
  *
  * // Define your entity
- * const userSchema = defineSchema({...});
- * const userReducer = defineReducer({...});
+ * const userSchema = defineSchema("user", {...});
+ * const userReducer = defineReducer(userSchema, ...);
  * class User extends Entity(userSchema, userReducer) {
  *   // ...
  * }
  *
+ * // Create storage backend
+ * const storage = defineStorage({
+ *   async getEventsByEntityId({ entityName, entityId }) {
+ *     // Implementation for retrieving events
+ *   },
+ *   async commitEvents({ events }) {
+ *     // Implementation for storing events
+ *   }
+ * });
+ *
  * // Create repository with storage
- * const userRepository = createRepository({
- *   schema: userSchema,
- *   entity: User,
- *   storage: new MongoDBStorage({
- *     uri: 'mongodb://localhost:27017',
- *     database: 'myapp'
- *   })
+ * const userRepository = createRepository(User, {
+ *   storage: storage
  * });
  *
  * // Use the repository

@@ -75,49 +75,59 @@ export type Storage<
  *
  * ### In-Memory Storage (for testing)
  * ```typescript
- * const inMemoryStorage = defineStorage({
- *   events: new Map<string, Event[]>(),
+ * const createInMemoryStorage = () => {
+ *   const events = new Map<string, Event[]>();
  *
- *   async getEventsByEntityId({ entityName, entityId }) {
- *     const key = `${entityName}:${entityId}`;
- *     return this.events.get(key) || [];
- *   },
+ *   return defineStorage({
+ *     async getEventsByEntityId({ entityName, entityId }) {
+ *       const key = `${entityName}:${entityId}`;
+ *       return events.get(key) || [];
+ *     },
  *
- *   async commitEvents({ events }) {
- *     for (const event of events) {
- *       const key = `${event.entityName}:${event.entityId}`;
- *       const existing = this.events.get(key) || [];
- *       this.events.set(key, [...existing, event]);
- *     }
- *   },
- * });
+ *     async commitEvents({ events: newEvents }) {
+ *       for (const event of newEvents) {
+ *         const key = `${event.entityName}:${event.entityId}`;
+ *         const existing = events.get(key) || [];
+ *         events.set(key, [...existing, event]);
+ *       }
+ *     },
+ *   });
+ * };
+ *
+ * const inMemoryStorage = createInMemoryStorage();
  * ```
  *
  * ### MongoDB Storage
  * ```typescript
- * const mongoStorage = defineStorage({
- *   async getEventsByEntityId({ entityName, entityId }) {
- *     const events = await db.collection('events')
- *       .find({ entityName, entityId })
- *       .sort({ eventCreatedAt: 1 })
- *       .toArray();
- *     return events;
- *   },
+ * const createMongoDBStorage = (client: MongoClient, dbName: string) => {
+ *   const db = client.db(dbName);
  *
- *   async commitEvents({ events }) {
- *     if (events.length === 0) return;
+ *   return defineStorage({
+ *     async getEventsByEntityId({ entityName, entityId }) {
+ *       const events = await db.collection('events')
+ *         .find({ entityName, entityId })
+ *         .sort({ eventCreatedAt: 1 })
+ *         .toArray();
+ *       return events;
+ *     },
  *
- *     const session = await client.startSession();
+ *     async commitEvents({ events }) {
+ *       if (events.length === 0) return;
  *
- *     try {
- *       await session.withTransaction(async () => {
- *         await db.collection('events').insertMany(events, { session });
- *       });
- *     } finally {
- *       await session.endSession();
- *     }
- *   },
- * });
+ *       const session = await client.startSession();
+ *
+ *       try {
+ *         await session.withTransaction(async () => {
+ *           await db.collection('events').insertMany(events, { session });
+ *         });
+ *       } finally {
+ *         await session.endSession();
+ *       }
+ *     },
+ *   });
+ * };
+ *
+ * const mongoStorage = createMongoDBStorage(mongoClient, 'myapp');
  * ```
  *
  * @since 1.0.0

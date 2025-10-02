@@ -121,7 +121,7 @@ class User extends Entity(userSchema, userReducer) {
     if (this.isDeleted) {
       throw new Error("Cannot update profile of deleted user");
     }
-    this.dispatch("user:x", updates);
+    this.dispatch("user:profile_updated", updates);
   }
 
   delete(reason?: string) {
@@ -147,25 +147,29 @@ Configure your storage backend and create a repository:
 ```typescript
 import { createRepository, defineStorage } from 'ventyd';
 
-// Use in-memory storage for development
-const storage = defineStorage({
-  async getEventsByEntityId({ entityName, entityId }) {
-    // Implementation for retrieving events
-    return events.filter(e =>
-      e.entityName === entityName &&
-      e.entityId === entityId
-    );
-  },
-  async commitEvents({ events }) {
-    // Implementation for storing events
-    eventStore.push(...events);
-  }
-});
+// Create in-memory storage for development using a factory function
+const createInMemoryStorage = () => {
+  const eventStore: any[] = [];
+
+  return defineStorage({
+    async getEventsByEntityId({ entityName, entityId }) {
+      // Implementation for retrieving events
+      return eventStore.filter(e =>
+        e.entityName === entityName &&
+        e.entityId === entityId
+      );
+    },
+    async commitEvents({ events }) {
+      // Implementation for storing events
+      eventStore.push(...events);
+    }
+  });
+};
+
+const storage = createInMemoryStorage();
 
 // Create a repository for your entity
-const userRepository = createRepository({
-  schema: userSchema,
-  entity: User,
+const userRepository = createRepository(User, {
   storage,
 });
 ```
@@ -246,19 +250,23 @@ Reducers are pure functions that compute state from events:
 Perfect for development and testing:
 
 ```typescript
-const events: any[] = [];
+const createInMemoryStorage = () => {
+  const events: any[] = [];
 
-const storage = defineStorage({
-  async getEventsByEntityId({ entityName, entityId }) {
-    return events.filter(e =>
-      e.entityName === entityName &&
-      e.entityId === entityId
-    );
-  },
-  async commitEvents({ events: newEvents }) {
-    events.push(...newEvents);
-  }
-});
+  return defineStorage({
+    async getEventsByEntityId({ entityName, entityId }) {
+      return events.filter(e =>
+        e.entityName === entityName &&
+        e.entityId === entityId
+      );
+    },
+    async commitEvents({ events: newEvents }) {
+      events.push(...newEvents);
+    }
+  });
+};
+
+const storage = createInMemoryStorage();
 ```
 
 ### MongoDB Storage
@@ -268,23 +276,27 @@ For production deployments:
 ```typescript
 import { MongoClient } from 'mongodb';
 
-const client = new MongoClient('mongodb://localhost:27017');
-const db = client.db('myapp');
-const eventsCollection = db.collection('events');
+const createMongoDBStorage = (uri: string, dbName: string) => {
+  const client = new MongoClient(uri);
+  const db = client.db(dbName);
+  const eventsCollection = db.collection('events');
 
-const storage = defineStorage({
-  async getEventsByEntityId({ entityName, entityId }) {
-    return eventsCollection
-      .find({ entityName, entityId })
-      .sort({ eventCreatedAt: 1 })
-      .toArray();
-  },
-  async commitEvents({ events }) {
-    if (events.length > 0) {
-      await eventsCollection.insertMany(events);
+  return defineStorage({
+    async getEventsByEntityId({ entityName, entityId }) {
+      return eventsCollection
+        .find({ entityName, entityId })
+        .sort({ eventCreatedAt: 1 })
+        .toArray();
+    },
+    async commitEvents({ events }) {
+      if (events.length > 0) {
+        await eventsCollection.insertMany(events);
+      }
     }
-  }
-});
+  });
+};
+
+const storage = createMongoDBStorage('mongodb://localhost:27017', 'myapp');
 ```
 
 ## Best Practices
