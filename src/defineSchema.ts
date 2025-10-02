@@ -1,59 +1,13 @@
 import { z } from "zod";
-import type { ValueOf, ZodEmptyObject, ZodEventObject } from "./util-types";
+import type {
+  EventDefinitionInput,
+  Schema,
+  SingleEventSchema,
+  StateDefinitionInput,
+} from "./schema-types";
+import type { ValueOf } from "./util-types";
 
 const defaultGenerateId = () => crypto.randomUUID();
-
-type ZodEventObjectMapByEventName<
-  EntityName extends string,
-  ZodEventBodyObjectMapByEventName extends {
-    [eventName in string]: ZodEmptyObject;
-  },
-> = {
-  [EventName in keyof ZodEventBodyObjectMapByEventName]: ZodEventObject<
-    `${EntityName}:${Extract<EventName, string>}`,
-    ZodEventBodyObjectMapByEventName[EventName]
-  >;
-};
-
-/**
- * Type definition for a complete entity schema.
- * @internal
- */
-export type Schema<
-  EntityName extends string,
-  ZodEventBodyObjectMapByEventName extends {
-    [eventName in string]: ZodEmptyObject;
-  },
-  InitialEventName extends keyof ZodEventBodyObjectMapByEventName,
-  State extends ZodEmptyObject,
-> = {
-  event: z.ZodDiscriminatedUnion<
-    ValueOf<
-      ZodEventObjectMapByEventName<EntityName, ZodEventBodyObjectMapByEventName>
-    >[],
-    "eventName"
-  >;
-  eventMap: ZodEventObjectMapByEventName<
-    EntityName,
-    ZodEventBodyObjectMapByEventName
-  >;
-  state: State;
-  " $$entityName": EntityName;
-  " $$eventBodyMap": ZodEventBodyObjectMapByEventName;
-  " $$initialEventName": InitialEventName;
-  " $$generateId": () => string;
-};
-
-/**
- * Base type for all schemas, used for type constraints.
- * @internal
- */
-export type BaseSchema = Schema<
-  string,
-  { [eventName in string]: ZodEmptyObject },
-  string,
-  ZodEmptyObject
->;
 
 /**
  * Defines a complete schema for an event-sourced entity.
@@ -146,70 +100,51 @@ export type BaseSchema = Schema<
  */
 export function defineSchema<
   EntityName extends string,
-  ZodEventBodyObjectMapByEventName extends {
-    [eventName in string]: ZodEmptyObject;
-  },
-  InitialEventName extends keyof ZodEventBodyObjectMapByEventName,
-  State extends ZodEmptyObject,
+  EventDefinition extends EventDefinitionInput,
+  StateDefinition extends StateDefinitionInput,
+  InitialEventName extends Extract<keyof EventDefinition, string>,
 >(
   entityName: EntityName,
   options: {
-    event: ZodEventBodyObjectMapByEventName;
+    event: EventDefinition;
+    state: StateDefinition;
     initialEventName: InitialEventName;
-    state: State;
     generateId?: () => string;
   },
-): Schema<
-  EntityName,
-  ZodEventBodyObjectMapByEventName,
-  InitialEventName,
-  State
-> {
-  // 0. prepare
-  type ISchemaMap = ZodEventObjectMapByEventName<
-    EntityName,
-    ZodEventBodyObjectMapByEventName
-  >;
-  type ISchemaTuple = [ValueOf<ISchemaMap>, ...ValueOf<ISchemaMap>[]];
+): Schema<EntityName, EventDefinition, StateDefinition, InitialEventName> {
+  type SingleEventSchemaMap = {
+    [eventName in keyof EventDefinition]: SingleEventSchema<
+      `${EntityName}:${Extract<eventName, string>}`,
+      EventDefinition[eventName]
+    >;
+  };
+  type SingleEventSchemaTuple = [
+    ValueOf<SingleEventSchemaMap>,
+    ...ValueOf<SingleEventSchemaMap>[],
+  ];
 
-  const eventBodySchemaMap = options.event;
-  const eventBodySchemaEntries = Object.entries(options.event);
-  const BaseEventSchema = z.object({
+  const baseEventSchema = z.object({
     eventId: z.string(),
     eventCreatedAt: z.string(),
     entityName: z.string(),
     entityId: z.string(),
   });
 
-  // 1. create event schema map (optimized without spread)
-  const eventSchemaMap = eventBodySchemaEntries.reduce<ISchemaMap>(
-    (acc, [eventName, body]) => {
-      const key = `${entityName}:${eventName}` as const;
-      acc[key as keyof ISchemaMap] = BaseEventSchema.extend({
-        eventName: z.literal(key),
-        body,
-      }) as ISchemaMap[keyof ISchemaMap];
-      return acc;
-    },
-    {} as ISchemaMap,
-  );
-
-  // 2. create event schema tuple
-  const eventSchemaTuple = eventBodySchemaEntries.map(([eventName, body]) =>
-    BaseEventSchema.extend({
+  const eventSchemas = Object.entries(options.event).map(([eventName, body]) =>
+    baseEventSchema.extend({
       eventName: z.literal(`${entityName}:${eventName}`),
       body,
     }),
-  ) as ISchemaTuple;
-  const [a, ...b] = eventSchemaTuple;
+  ) as SingleEventSchemaTuple;
 
   return {
-    event: z.discriminatedUnion("eventName", [a, ...b]),
-    eventMap: eventSchemaMap,
+    event: z.discriminatedUnion("eventName", eventSchemas),
     state: options.state,
     " $$entityName": entityName,
-    " $$eventBodyMap": eventBodySchemaMap,
+    " $$eventDefinition": options.event,
+    " $$stateDefinition": options.state,
     " $$initialEventName": options.initialEventName,
+    " $$initialEventBodySchema": options.event[options.initialEventName],
     " $$generateId": options.generateId ?? defaultGenerateId,
   };
 }

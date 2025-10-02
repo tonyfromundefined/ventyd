@@ -1,5 +1,5 @@
-import type { z } from "zod";
-import type { BaseSchema } from "./defineSchema";
+import type { SingleEvent } from "./schema-types";
+import type { ZodEmptyObject } from "./util-types";
 
 /**
  * Storage interface for persisting and retrieving events.
@@ -36,7 +36,7 @@ export type Storage = {
   getEventsByEntityId: (args: {
     entityName: string;
     entityId: string;
-  }) => Promise<z.infer<BaseSchema["event"]>[]>;
+  }) => Promise<SingleEvent<string, ZodEmptyObject>[]>;
 
   /**
    * Persists a batch of events to storage.
@@ -50,7 +50,9 @@ export type Storage = {
    * or all fail. This ensures consistency in the event log and prevents
    * partial state transitions.
    */
-  commitEvents(args: { events: z.infer<BaseSchema["event"]>[] }): Promise<void>;
+  commitEvents(args: {
+    events: SingleEvent<string, ZodEmptyObject>[];
+  }): Promise<void>;
 };
 
 /**

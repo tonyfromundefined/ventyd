@@ -1,10 +1,15 @@
 import { z } from "zod";
 import type { Reducer } from "./defineReducer";
-import type { BaseSchema } from "./defineSchema";
-
-type InitialEventOf<Schema extends BaseSchema> = z.infer<
-  Schema["eventMap"][Schema[" $$initialEventName"]]
->;
+import type {
+  InferEntityNameFromSchema,
+  InferEventBodyFromSchema,
+  InferEventFromSchema,
+  InferEventNameFromSchema,
+  InferInitialEventBodyFromSchema,
+  InferInitialEventNameFromSchema,
+  InferStateFromSchema,
+} from "./schema-types";
+import type { ZodEmptyObject } from "./util-types";
 
 /**
  * Internal interface defining the structure of an Entity instance.
@@ -18,7 +23,7 @@ type InitialEventOf<Schema extends BaseSchema> = z.infer<
  * Properties prefixed with ` $$` are considered private implementation details
  * and should not be accessed directly by consumers.
  */
-export interface $$Entity<Schema extends BaseSchema> {
+export interface $$Entity<S> {
   // ----------------------
   // public properties
   // ----------------------
@@ -27,7 +32,7 @@ export interface $$Entity<Schema extends BaseSchema> {
    * The canonical name of this entity type.
    * This value is used for event namespacing and storage isolation.
    */
-  entityName: Schema[" $$entityName"];
+  entityName: InferEntityNameFromSchema<S>;
 
   /**
    * The unique identifier for this entity instance.
@@ -41,20 +46,18 @@ export interface $$Entity<Schema extends BaseSchema> {
    * @readonly
    * @throws {Error} If the entity has not been initialized
    */
-  get state(): z.infer<Schema["state"]>;
+  get state(): InferStateFromSchema<S>;
 
   // ----------------------
   // private properties
   // ----------------------
 
   /** @internal */
-  " $$state": z.infer<Schema["state"]>;
+  " $$state": InferStateFromSchema<S>;
   /** @internal */
-  " $$schema": Schema;
+  " $$queuedEvents": InferEventFromSchema<S>[];
   /** @internal */
-  " $$queuedEvents": z.infer<Schema["event"]>[];
-  /** @internal */
-  " $$reducer": Reducer<Schema>;
+  " $$reducer": Reducer<S>;
 
   // ----------------------
   // public methods
@@ -80,9 +83,9 @@ export interface $$Entity<Schema extends BaseSchema> {
    * });
    * ```
    */
-  dispatch: <EventName extends z.infer<Schema["event"]>["eventName"]>(
-    eventName: EventName,
-    body: z.infer<Schema["eventMap"][EventName]>["body"],
+  dispatch: <K extends InferEventNameFromSchema<S>>(
+    eventName: K,
+    body: InferEventBodyFromSchema<S, K>,
   ) => void;
 
   // ----------------------
@@ -92,7 +95,7 @@ export interface $$Entity<Schema extends BaseSchema> {
   /** @internal */
   " $$flush": () => void;
   /** @internal */
-  " $$hydrate": (events: z.infer<Schema["event"]>[]) => void;
+  " $$hydrate": (events: InferEventFromSchema<S>[]) => void;
 }
 
 /**
@@ -136,20 +139,35 @@ export interface $$Entity<Schema extends BaseSchema> {
  *
  * @since 1.0.0
  */
-export function Entity<Schema extends BaseSchema>(
-  schema: Schema,
-  reducer: Reducer<Schema>,
+export function Entity<S>(
+  schema: S,
+  reducer: Reducer<S>,
   options?: {
     maxQueuedEvents?: number;
   },
 ) {
   const MAX_QUEUED_EVENTS = options?.maxQueuedEvents ?? 10000; // Default to 10000 events
 
-  return class BaseEntity implements $$Entity<Schema> {
+  type EntityName = InferEntityNameFromSchema<S>;
+  type State = InferStateFromSchema<S>;
+  type Event = InferEventFromSchema<S>;
+
+  // biome-ignore lint/suspicious/noExplicitAny: schema is valid
+  const _schema: any = schema;
+
+  const entityName: EntityName = _schema[" $$entityName"];
+  const initialEventName: InferInitialEventNameFromSchema<S> =
+    _schema[" $$initialEventName"];
+  const initialEventBodySchema: ZodEmptyObject =
+    _schema[" $$initialEventBodySchema"];
+  const eventSchema: ZodEmptyObject = _schema.event;
+  const generateId: () => string = _schema[" $$generateId"];
+
+  return class BaseEntity implements $$Entity<S> {
     // ----------------------
     // public properties
     // ----------------------
-    entityName: Schema[" $$entityName"] = schema[" $$entityName"];
+    entityName: EntityName = entityName;
     entityId: string;
 
     get state() {
@@ -164,10 +182,9 @@ export function Entity<Schema extends BaseSchema>(
     // private properties
     // ----------------------
     // biome-ignore lint/suspicious/noExplicitAny: initial state is null
-    " $$state": z.infer<Schema["state"]> = null as any;
-    " $$schema": Schema = schema;
-    " $$queuedEvents": z.infer<Schema["event"]>[] = [];
-    " $$reducer": Reducer<Schema> = reducer;
+    " $$state": State = null as any;
+    " $$queuedEvents": Event[] = [];
+    " $$reducer": Reducer<S> = reducer;
 
     // ----------------------
     // constructor
@@ -204,14 +221,8 @@ export function Entity<Schema extends BaseSchema>(
      */
     constructor(args?: {
       entityId?: string;
-      body?: InitialEventOf<Schema>["body"];
+      body?: InferInitialEventBodyFromSchema<S>;
     }) {
-      // 0. prepare
-      const entityName = schema[" $$entityName"];
-      const initialEventName = schema[" $$initialEventName"];
-      const initialEventBodySchema =
-        schema[" $$eventBodyMap"][initialEventName];
-
       // 1. validate initial event body if provided
       if (args?.body) {
         if (!initialEventBodySchema) {
@@ -224,13 +235,15 @@ export function Entity<Schema extends BaseSchema>(
       }
 
       // 2. initialize entity
-      const generateId = schema[" $$generateId"];
       this.entityId = args?.entityId ?? generateId();
 
       // 3. dispatch initial event
       if (args?.body) {
-        const eventName = `${entityName}:${initialEventName}` as const;
-        const body = args.body; // Already validated above
+        type EventName = InferEventNameFromSchema<S>;
+        type EventBody = InferEventBodyFromSchema<S, EventName>;
+
+        const eventName = `${entityName}:${initialEventName}` as EventName;
+        const body = args.body as EventBody;
 
         this.dispatch(eventName, body);
       }
@@ -239,16 +252,14 @@ export function Entity<Schema extends BaseSchema>(
     // ----------------------
     // public methods
     // ----------------------
-    dispatch<EventName extends z.infer<Schema["event"]>["eventName"]>(
+    dispatch<EventName extends InferEventNameFromSchema<S>>(
       eventName: EventName,
-      body: z.infer<Schema["eventMap"][EventName]>["body"],
+      body: InferEventBodyFromSchema<S, EventName>,
     ) {
       // 0. prepare
-      type IEvent = z.infer<Schema["event"]>;
       const queuedEvents = this[" $$queuedEvents"];
       const reducer = this[" $$reducer"];
       const prevState = this[" $$state"];
-      const generateId = schema[" $$generateId"];
 
       // Check queue size limit
       if (queuedEvents.length >= MAX_QUEUED_EVENTS) {
@@ -266,7 +277,7 @@ export function Entity<Schema extends BaseSchema>(
         entityId: this.entityId,
         entityName: this.entityName,
         body,
-      } as IEvent;
+      } as Event;
 
       // 2. add event to queue
       queuedEvents.push(event);
@@ -284,10 +295,9 @@ export function Entity<Schema extends BaseSchema>(
 
     " $$hydrate"(input: unknown[]) {
       // 0. prepare
-      type IEvent = z.infer<Schema["event"]>;
       const reducer = this[" $$reducer"];
       const prevState = this[" $$state"];
-      const EventArraySchema = z.array(schema.event);
+      const EventArraySchema = z.array(eventSchema);
 
       // 1. validate current state
       if (this[" $$state"] !== null) {
@@ -295,7 +305,7 @@ export function Entity<Schema extends BaseSchema>(
       }
 
       // 2. validate events
-      const events = EventArraySchema.parse(input) as IEvent[];
+      const events = EventArraySchema.parse(input) as Event[];
 
       // 3. compute state
       this[" $$state"] = events.reduce(reducer, prevState);

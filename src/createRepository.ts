@@ -1,5 +1,4 @@
 import { z } from "zod";
-import type { BaseSchema } from "./defineSchema";
 import type { Storage } from "./defineStorage";
 import type { $$Entity } from "./Entity";
 import type { ConstructorReturnType } from "./util-types";
@@ -16,7 +15,7 @@ import type { ConstructorReturnType } from "./util-types";
  *
  * @since 1.0.0
  */
-export type Repository<Entity> = {
+export type Repository<E> = {
   /**
    * Retrieves an entity by its unique identifier.
    *
@@ -36,7 +35,7 @@ export type Repository<Entity> = {
    * });
    * ```
    */
-  findOne: (args: { entityId: string }) => Promise<Entity | null>;
+  findOne: (args: { entityId: string }) => Promise<E | null>;
 
   /**
    * Persists an entity's pending events to storage.
@@ -68,7 +67,7 @@ export type Repository<Entity> = {
    *
    * @throws Will propagate any errors from the storage layer
    */
-  commit: (entity: Entity) => Promise<void>;
+  commit: (entity: E) => Promise<void>;
 };
 
 /**
