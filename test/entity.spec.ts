@@ -173,7 +173,7 @@ describe("Entity Unit Tests", () => {
       const events = [
         {
           eventId: "evt-1",
-          eventName: "user:created",
+          eventName: "user:created" as const,
           eventCreatedAt: "2024-01-01T00:00:00Z",
           entityId: "user-789",
           entityName: "user",
@@ -184,7 +184,7 @@ describe("Entity Unit Tests", () => {
         },
         {
           eventId: "evt-2",
-          eventName: "user:profile_updated",
+          eventName: "user:profile_updated" as const,
           eventCreatedAt: "2024-01-01T01:00:00Z",
           entityId: "user-789",
           entityName: "user",
@@ -194,7 +194,7 @@ describe("Entity Unit Tests", () => {
         },
         {
           eventId: "evt-3",
-          eventName: "user:deleted",
+          eventName: "user:deleted" as const,
           eventCreatedAt: "2024-01-01T02:00:00Z",
           entityId: "user-789",
           entityName: "user",
@@ -224,7 +224,7 @@ describe("Entity Unit Tests", () => {
       const events = [
         {
           eventId: "evt-1",
-          eventName: "user:created",
+          eventName: "user:created" as const,
           eventCreatedAt: "2024-01-01T00:00:00Z",
           entityId: user.entityId,
           entityName: "user",
@@ -246,13 +246,16 @@ describe("Entity Unit Tests", () => {
       const invalidEvents = [
         {
           eventId: "evt-1",
-          eventName: "user:created",
+          eventName: "user:created" as const,
+          eventCreatedAt: "2024-01-01T00:00:00Z",
+          entityId: "user-invalid",
+          entityName: "user",
           // Missing required fields
           body: {
             nickname: "Invalid",
           },
         },
-      ];
+      ] as any;
 
       expect(() => user[" $$hydrate"](invalidEvents)).toThrow();
     });

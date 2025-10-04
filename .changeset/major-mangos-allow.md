@@ -1,0 +1,5 @@
+---
+"ventyd": patch
+---
+
+refactor: types

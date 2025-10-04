@@ -1,5 +1,9 @@
-import type { z } from "zod";
-import type { BaseSchema } from "./defineSchema";
+import type {
+  EventDefinitionInput,
+  InferEventFromSchema,
+  Schema,
+  StateDefinitionInput,
+} from "./schema-types";
 
 /**
  * Storage interface for persisting and retrieving events.
@@ -19,7 +23,9 @@ import type { BaseSchema } from "./defineSchema";
  *
  * @since 1.0.0
  */
-export type Storage = {
+export type Storage<
+  $$Schema = Schema<string, EventDefinitionInput, StateDefinitionInput, string>,
+> = {
   /**
    * Retrieves all events for a specific entity.
    *
@@ -36,7 +42,7 @@ export type Storage = {
   getEventsByEntityId: (args: {
     entityName: string;
     entityId: string;
-  }) => Promise<z.infer<BaseSchema["event"]>[]>;
+  }) => Promise<InferEventFromSchema<$$Schema>[]>;
 
   /**
    * Persists a batch of events to storage.
@@ -50,7 +56,9 @@ export type Storage = {
    * or all fail. This ensures consistency in the event log and prevents
    * partial state transitions.
    */
-  commitEvents(args: { events: z.infer<BaseSchema["event"]>[] }): Promise<void>;
+  commitEvents(args: {
+    events: InferEventFromSchema<$$Schema>[];
+  }): Promise<void>;
 };
 
 /**
@@ -67,53 +75,65 @@ export type Storage = {
  *
  * ### In-Memory Storage (for testing)
  * ```typescript
- * const inMemoryStorage = defineStorage({
- *   events: new Map<string, Event[]>(),
+ * const createInMemoryStorage = () => {
+ *   const events = new Map<string, Event[]>();
  *
- *   async getEventsByEntityId({ entityName, entityId }) {
- *     const key = `${entityName}:${entityId}`;
- *     return this.events.get(key) || [];
- *   },
+ *   return defineStorage({
+ *     async getEventsByEntityId({ entityName, entityId }) {
+ *       const key = `${entityName}:${entityId}`;
+ *       return events.get(key) || [];
+ *     },
  *
- *   async commitEvents({ events }) {
- *     for (const event of events) {
- *       const key = `${event.entityName}:${event.entityId}`;
- *       const existing = this.events.get(key) || [];
- *       this.events.set(key, [...existing, event]);
- *     }
- *   },
- * });
+ *     async commitEvents({ events: newEvents }) {
+ *       for (const event of newEvents) {
+ *         const key = `${event.entityName}:${event.entityId}`;
+ *         const existing = events.get(key) || [];
+ *         events.set(key, [...existing, event]);
+ *       }
+ *     },
+ *   });
+ * };
+ *
+ * const inMemoryStorage = createInMemoryStorage();
  * ```
  *
  * ### MongoDB Storage
  * ```typescript
- * const mongoStorage = defineStorage({
- *   async getEventsByEntityId({ entityName, entityId }) {
- *     const events = await db.collection('events')
- *       .find({ entityName, entityId })
- *       .sort({ eventCreatedAt: 1 })
- *       .toArray();
- *     return events;
- *   },
+ * const createMongoDBStorage = (client: MongoClient, dbName: string) => {
+ *   const db = client.db(dbName);
  *
- *   async commitEvents({ events }) {
- *     if (events.length === 0) return;
+ *   return defineStorage({
+ *     async getEventsByEntityId({ entityName, entityId }) {
+ *       const events = await db.collection('events')
+ *         .find({ entityName, entityId })
+ *         .sort({ eventCreatedAt: 1 })
+ *         .toArray();
+ *       return events;
+ *     },
  *
- *     const session = await client.startSession();
+ *     async commitEvents({ events }) {
+ *       if (events.length === 0) return;
  *
- *     try {
- *       await session.withTransaction(async () => {
- *         await db.collection('events').insertMany(events, { session });
- *       });
- *     } finally {
- *       await session.endSession();
- *     }
- *   },
- * });
+ *       const session = await client.startSession();
+ *
+ *       try {
+ *         await session.withTransaction(async () => {
+ *           await db.collection('events').insertMany(events, { session });
+ *         });
+ *       } finally {
+ *         await session.endSession();
+ *       }
+ *     },
+ *   });
+ * };
+ *
+ * const mongoStorage = createMongoDBStorage(mongoClient, 'myapp');
  * ```
  *
  * @since 1.0.0
  */
-export function defineStorage(storage: Storage): Storage {
+export function defineStorage<
+  $$Schema = Schema<string, EventDefinitionInput, StateDefinitionInput, string>,
+>(storage: Storage<$$Schema>): Storage<$$Schema> {
   return storage;
 }

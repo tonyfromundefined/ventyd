@@ -1,5 +1,7 @@
-import type { z } from "zod";
-import type { BaseSchema } from "./defineSchema";
+import type {
+  InferEventFromSchema,
+  InferStateFromSchema,
+} from "./schema-types";
 
 /**
  * Reducer function signature for computing entity state from events.
@@ -15,10 +17,10 @@ import type { BaseSchema } from "./defineSchema";
  *
  * @since 1.0.0
  */
-export type Reducer<Schema extends BaseSchema> = (
-  prevState: z.infer<Schema["state"]>,
-  event: z.infer<Schema["event"]> | { eventName: "%unknown%" },
-) => z.infer<Schema["state"]>;
+export type Reducer<$$Schema> = (
+  prevState: InferStateFromSchema<$$Schema>,
+  event: InferEventFromSchema<$$Schema> | { eventName: "%unknown%" },
+) => InferStateFromSchema<$$Schema>;
 
 /**
  * Defines a reducer function for computing entity state from events.
@@ -116,9 +118,9 @@ export type Reducer<Schema extends BaseSchema> = (
  *
  * @since 1.0.0
  */
-export function defineReducer<Schema extends BaseSchema>(
-  schema: Schema,
-  fn: Reducer<Schema>,
-): Reducer<Schema> {
+export function defineReducer<$$Schema>(
+  schema: $$Schema,
+  fn: Reducer<$$Schema>,
+): Reducer<$$Schema> {
   return fn;
 }
