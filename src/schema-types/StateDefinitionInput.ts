@@ -1,3 +1,3 @@
-import type { ZodEmptyObject } from "../util-types";
+import type { ValibotEmptyObject } from "../util-types";
 
-export type StateDefinitionInput = ZodEmptyObject;
+export type StateDefinitionInput = ValibotEmptyObject;

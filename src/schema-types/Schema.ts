@@ -1,5 +1,5 @@
-import type z from "zod";
-import type { ZodEmptyObject } from "../util-types";
+import type * as v from "valibot";
+import type { ValibotEmptyObject, ValibotEventObject } from "../util-types";
 import type { EventDefinitionInput } from "./EventDefinitionInput";
 import type { EventSchema } from "./EventSchema";
 import type { StateDefinitionInput } from "./StateDefinitionInput";
@@ -29,8 +29,10 @@ export type Schema<
  * Infer the state type from a schema.
  * @internal
  */
-export type InferStateFromSchema<T> = T extends { state: z.ZodObject }
-  ? z.infer<T["state"]>
+export type InferStateFromSchema<T> = T extends {
+  state: ValibotEmptyObject;
+}
+  ? v.InferOutput<T["state"]>
   : never;
 
 /**
@@ -38,9 +40,13 @@ export type InferStateFromSchema<T> = T extends { state: z.ZodObject }
  * @internal
  */
 export type InferEventFromSchema<T> = T extends {
-  event: z.ZodDiscriminatedUnion;
+  event: v.VariantSchema<
+    "eventName",
+    ValibotEventObject<string, ValibotEmptyObject>[],
+    undefined
+  >;
 }
-  ? z.infer<T["event"]>
+  ? v.InferOutput<T["event"]>
   : never;
 
 /**
@@ -48,9 +54,13 @@ export type InferEventFromSchema<T> = T extends {
  * @internal
  */
 export type InferEventNameFromSchema<T> = T extends {
-  event: z.ZodDiscriminatedUnion<ZodEmptyObject[], "eventName">;
+  event: v.VariantSchema<
+    "eventName",
+    ValibotEventObject<string, ValibotEmptyObject>[],
+    undefined
+  >;
 }
-  ? z.infer<T["event"]>["eventName"]
+  ? v.InferOutput<T["event"]>["eventName"]
   : string;
 
 /**
@@ -61,9 +71,13 @@ export type InferEventBodyFromSchema<
   T,
   EventName extends InferEventNameFromSchema<T>,
 > = T extends {
-  event: z.ZodDiscriminatedUnion<ZodEmptyObject[], "eventName">;
+  event: v.VariantSchema<
+    "eventName",
+    ValibotEventObject<string, ValibotEmptyObject>[],
+    undefined
+  >;
 }
-  ? Extract<z.infer<T["event"]>, { eventName: EventName }>["body"]
+  ? Extract<v.InferOutput<T["event"]>, { eventName: EventName }>["body"]
   : never;
 
 /**
@@ -81,9 +95,9 @@ export type InferInitialEventNameFromSchema<T> = T extends {
  * @internal
  */
 export type InferInitialEventBodyFromSchema<T> = T extends {
-  " $$initialEventBodySchema": ZodEmptyObject;
+  " $$initialEventBodySchema": ValibotEmptyObject;
 }
-  ? z.infer<T[" $$initialEventBodySchema"]>
+  ? v.InferOutput<T[" $$initialEventBodySchema"]>
   : never;
 
 /**

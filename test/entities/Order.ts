@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "valibot";
 import { defineReducer } from "../../src/defineReducer";
 import { defineSchema } from "../../src/defineSchema";
 import { Entity } from "../../src/Entity";
@@ -8,60 +8,66 @@ import { Entity } from "../../src/Entity";
  */
 export const orderSchema = defineSchema("order", {
   event: {
-    created: z.object({
-      customerId: z.string(),
-      items: z.array(
-        z.object({
-          productId: z.string(),
-          quantity: z.number().positive(),
-          price: z.number().positive(),
+    created: v.object({
+      customerId: v.string(),
+      items: v.array(
+        v.object({
+          productId: v.string(),
+          quantity: v.number(),
+          price: v.number(),
         }),
       ),
     }),
-    item_added: z.object({
-      productId: z.string(),
-      quantity: z.number().positive(),
-      price: z.number().positive(),
+    item_added: v.object({
+      productId: v.string(),
+      quantity: v.number(),
+      price: v.number(),
     }),
-    item_removed: z.object({
-      productId: z.string(),
+    item_removed: v.object({
+      productId: v.string(),
     }),
-    confirmed: z.object({
-      paymentMethod: z.enum(["card", "paypal", "bank"]),
+    confirmed: v.object({
+      paymentMethod: v.picklist(["card", "paypal", "bank"]),
     }),
-    shipped: z.object({
-      trackingNumber: z.string(),
-      carrier: z.string(),
+    shipped: v.object({
+      trackingNumber: v.string(),
+      carrier: v.string(),
     }),
-    delivered: z.object({
-      deliveredAt: z.string(),
-      signature: z.string().optional(),
+    delivered: v.object({
+      deliveredAt: v.string(),
+      signature: v.optional(v.string()),
     }),
-    cancelled: z.object({
-      reason: z.string(),
-      cancelledBy: z.enum(["customer", "system", "admin"]),
+    cancelled: v.object({
+      reason: v.string(),
+      cancelledBy: v.picklist(["customer", "system", "admin"]),
     }),
   },
-  state: z.object({
-    customerId: z.string(),
-    items: z.array(
-      z.object({
-        productId: z.string(),
-        quantity: z.number(),
-        price: z.number(),
+  state: v.object({
+    customerId: v.string(),
+    items: v.array(
+      v.object({
+        productId: v.string(),
+        quantity: v.number(),
+        price: v.number(),
       }),
     ),
-    status: z.enum(["draft", "confirmed", "shipped", "delivered", "cancelled"]),
-    totalAmount: z.number(),
-    paymentMethod: z.enum(["card", "paypal", "bank"]).optional(),
-    shipping: z
-      .object({
-        trackingNumber: z.string(),
-        carrier: z.string(),
-      })
-      .optional(),
-    deliveredAt: z.string().optional(),
-    cancelReason: z.string().optional(),
+    status: v.picklist([
+      "draft",
+      "confirmed",
+      "shipped",
+      "delivered",
+      "cancelled",
+    ]),
+    totalAmount: v.number(),
+    paymentMethod: v.optional(v.picklist(["card", "paypal", "bank"])),
+    shipping: v.optional(
+      v.object({
+        trackingNumber: v.string(),
+        carrier: v.string(),
+      }),
+    ),
+    deliveredAt: v.optional(v.string()),
+    cancelReason: v.optional(v.string()),
   }),
   initialEventName: "created",
 });

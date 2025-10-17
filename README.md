@@ -4,7 +4,7 @@ A TypeScript-first event sourcing library with full type safety and flexible sto
 
 ## Features
 
-- **Type-Safe Event Sourcing**: Full TypeScript support with Zod schema validation
+- **Type-Safe Event Sourcing**: Full TypeScript support with Valibot schema validation
 - **Multiple Storage Backends**: In-memory, MongoDB, SQLite, and custom storage adapters
 - **Event-Driven Architecture**: Capture all state changes as immutable events
 - **Time Travel**: Reconstruct entity state at any point in history
@@ -24,7 +24,7 @@ pnpm add ventyd
 
 ### 1. Define Your Schema
 
-Define your entity's events and state structure using Zod schemas:
+Define your entity's events and state structure using Valibot schemas:
 
 ```typescript
 import { z, defineSchema } from 'ventyd';

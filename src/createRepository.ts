@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "valibot";
 import type { Storage } from "./defineStorage";
 import type {
   Entity,
@@ -9,7 +9,7 @@ import type {
   InferEntityNameFromSchema,
   InferEventFromSchema,
 } from "./schema-types";
-import type { ConstructorReturnType, ZodEmptyObject } from "./util-types";
+import type { ConstructorReturnType, ValibotEmptyObject } from "./util-types";
 
 /**
  * Repository interface providing persistence operations for entities.
@@ -148,7 +148,7 @@ export function createRepository<
   const _schema: any = entity.schema;
 
   const entityName: $$EntityName = _schema[" $$entityName"];
-  const eventSchema: ZodEmptyObject = _schema.event;
+  const eventSchema: ValibotEmptyObject = _schema.event;
 
   const MyEntity = entity;
 
@@ -161,8 +161,8 @@ export function createRepository<
       });
 
       // validate events from storage using the schema
-      const EventArraySchema = z.array(eventSchema);
-      const events = EventArraySchema.parse(rawEvents) as $$Event[];
+      const EventArraySchema = v.array(eventSchema);
+      const events = v.parse(EventArraySchema, rawEvents) as $$Event[];
 
       if (events.length === 0) {
         return null;

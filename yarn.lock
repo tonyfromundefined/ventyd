@@ -3839,6 +3839,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"valibot@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "valibot@npm:1.1.0"
+  peerDependencies:
+    typescript: ">=5"
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/39580b4e4683cc44398fb775e88c03639dbaa7e6f587df416125916cb6307292d45df18f656054e8846093ced13a2d2fdc98659da6dd104d1d20180edcbd99d4
+  languageName: node
+  linkType: hard
+
 "ventyd@workspace:.":
   version: 0.0.0-use.local
   resolution: "ventyd@workspace:."
@@ -3852,8 +3864,8 @@ __metadata:
     mongodb: "npm:^6.20.0"
     mongodb-memory-server: "npm:^10.2.1"
     typescript: "npm:^5.9.2"
+    valibot: "npm:^1.1.0"
     vitest: "npm:^3.2.4"
-    zod: "npm:^4.1.11"
   languageName: unknown
   linkType: soft
 
@@ -4113,12 +4125,5 @@ __metadata:
     buffer-crc32: "npm:~0.2.3"
     pend: "npm:~1.2.0"
   checksum: 10c0/7b40b3dc46b95761a2a764391d257a11f494d365875af73a1b48fe16d4bd103dd178612e60168d12a0e59a8ba4f6411a15a5e8871d5a5f78255d6cc1ce39ee62
-  languageName: node
-  linkType: hard
-
-"zod@npm:^4.1.11":
-  version: 4.1.11
-  resolution: "zod@npm:4.1.11"
-  checksum: 10c0/ce6a4c4acfbf51d7dd0f2669c82f207d62a1f00264eef608994b94eb99d86a74c99f59b0dd3e61ef82909ee136631378b709e0908f0a02a2d5c21d0c497de5db
   languageName: node
   linkType: hard

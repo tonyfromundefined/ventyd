@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "valibot";
 import type {
   EventDefinitionInput,
   Schema,
@@ -128,22 +128,23 @@ export function defineSchema<
     ...ValueOf<$$SingleEventSchemaMap>[],
   ];
 
-  const baseEventSchema = z.object({
-    eventId: z.string(),
-    eventCreatedAt: z.string(),
-    entityName: z.string(),
-    entityId: z.string(),
+  const baseEventSchema = v.object({
+    eventId: v.string(),
+    eventCreatedAt: v.string(),
+    entityName: v.string(),
+    entityId: v.string(),
   });
 
   const eventSchemas = Object.entries(options.event).map(([eventName, body]) =>
-    baseEventSchema.extend({
-      eventName: z.literal(`${entityName}:${eventName}`),
+    v.object({
+      ...baseEventSchema.entries,
+      eventName: v.literal(`${entityName}:${eventName}`),
       body,
     }),
   ) as $$SingleEventSchemaTuple;
 
   return {
-    event: z.discriminatedUnion("eventName", eventSchemas),
+    event: v.variant("eventName", eventSchemas),
     state: options.state,
     " $$entityName": entityName,
     " $$eventDefinition": options.event,
