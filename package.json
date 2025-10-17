@@ -28,7 +28,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "zod": "^4.1.11"
+    "valibot": "^1.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",

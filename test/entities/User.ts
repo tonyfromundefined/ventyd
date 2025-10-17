@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "valibot";
 import { defineReducer } from "../../src/defineReducer";
 import { defineSchema } from "../../src/defineSchema";
 import { Entity } from "../../src/Entity";
@@ -8,24 +8,24 @@ import { Entity } from "../../src/Entity";
  */
 export const userSchema = defineSchema("user", {
   event: {
-    created: z.object({
-      nickname: z.string(),
-      email: z.string().email(),
+    created: v.object({
+      nickname: v.string(),
+      email: v.pipe(v.string(), v.email()),
     }),
-    profile_updated: z.object({
-      nickname: z.string().optional(),
-      bio: z.string().optional(),
+    profile_updated: v.object({
+      nickname: v.optional(v.string()),
+      bio: v.optional(v.string()),
     }),
-    deleted: z.object({
-      reason: z.string().optional(),
+    deleted: v.object({
+      reason: v.optional(v.string()),
     }),
-    restored: z.object({}),
+    restored: v.object({}),
   },
-  state: z.object({
-    nickname: z.string(),
-    email: z.string().email(),
-    bio: z.string().optional(),
-    deletedAt: z.string().optional().nullable(),
+  state: v.object({
+    nickname: v.string(),
+    email: v.pipe(v.string(), v.email()),
+    bio: v.optional(v.string()),
+    deletedAt: v.nullable(v.optional(v.string())),
   }),
   initialEventName: "created",
 });

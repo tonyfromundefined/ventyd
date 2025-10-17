@@ -4,7 +4,7 @@ A TypeScript-first event sourcing library with full type safety and flexible sto
 
 ## Features
 
-- **Type-Safe Event Sourcing**: Full TypeScript support with Zod schema validation
+- **Type-Safe Event Sourcing**: Full TypeScript support with Valibot schema validation
 - **Multiple Storage Backends**: In-memory, MongoDB, SQLite, and custom storage adapters
 - **Event-Driven Architecture**: Capture all state changes as immutable events
 - **Time Travel**: Reconstruct entity state at any point in history
@@ -24,33 +24,33 @@ pnpm add ventyd
 
 ### 1. Define Your Schema
 
-Define your entity's events and state structure using Zod schemas:
+Define your entity's events and state structure using Valibot schemas:
 
 ```typescript
-import { z, defineSchema } from 'ventyd';
+import { v, defineSchema } from 'ventyd';
 
 const userSchema = defineSchema("user", {
   // Define all possible events
   event: {
-    created: z.object({
-      nickname: z.string(),
-      email: z.string().email(),
+    created: v.object({
+      nickname: v.string(),
+      email: v.pipe(v.string(), v.email()),
     }),
-    profile_updated: z.object({
-      nickname: z.string().optional(),
-      bio: z.string().optional(),
+    profile_updated: v.object({
+      nickname: v.optional(v.string()),
+      bio: v.optional(v.string()),
     }),
-    deleted: z.object({
-      reason: z.string().optional(),
+    deleted: v.object({
+      reason: v.optional(v.string()),
     }),
-    restored: z.object({}),
+    restored: v.object({}),
   },
   // Define the entity state structure
-  state: z.object({
-    nickname: z.string(),
-    email: z.string().email(),
-    bio: z.string().optional(),
-    deletedAt: z.string().optional().nullable(),
+  state: v.object({
+    nickname: v.string(),
+    email: v.pipe(v.string(), v.email()),
+    bio: v.optional(v.string()),
+    deletedAt: v.optional(v.nullable(v.string())),
   }),
   // Specify which event initializes the entity
   initialEventName: "created",

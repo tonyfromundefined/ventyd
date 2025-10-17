@@ -1,7 +1,8 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: for testing */
+/** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
 
+import * as v from "valibot";
 import { describe, expect, test } from "vitest";
-import { z } from "zod";
 import { defineReducer } from "../src/defineReducer";
 import { defineSchema } from "../src/defineSchema";
 import { Entity } from "../src/Entity";
@@ -59,9 +60,9 @@ describe("Entity Unit Tests", () => {
 
       const schema = defineSchema("test", {
         event: {
-          created: z.object({ value: z.string() }),
+          created: v.object({ value: v.string() }),
         },
-        state: z.object({ value: z.string() }),
+        state: v.object({ value: v.string() }),
         initialEventName: "created",
         generateId: () => `test-${idCounter++}`,
       });

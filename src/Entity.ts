@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "valibot";
 import type { Reducer } from "./defineReducer";
 import type { Entity as EntityType } from "./entity-types/Entity";
 import type { EntityConstructor } from "./entity-types/EntityConstructor";
@@ -11,7 +11,7 @@ import type {
   InferInitialEventNameFromSchema,
   InferStateFromSchema,
 } from "./schema-types";
-import type { ZodEmptyObject } from "./util-types";
+import type { ValibotEmptyObject, ValibotEventObject } from "./util-types";
 
 /**
  * Creates an Entity class with event sourcing capabilities.
@@ -72,9 +72,10 @@ export function Entity<$$Schema>(
 
   const entityName: $$EntityName = _schema[" $$entityName"];
   const initialEventName: $$InitialEventName = _schema[" $$initialEventName"];
-  const initialEventBodySchema: ZodEmptyObject =
+  const initialEventBodySchema: ValibotEmptyObject =
     _schema[" $$initialEventBodySchema"];
-  const eventSchema: ZodEmptyObject = _schema.event;
+  const eventSchema: ValibotEventObject<string, ValibotEmptyObject> =
+    _schema.event;
   const generateId: () => string = _schema[" $$generateId"];
 
   // options
@@ -151,8 +152,9 @@ export function Entity<$$Schema>(
             `Body schema for initial event ${initialEventName} not found`,
           );
         }
+
         // Validate body before setting any entity properties
-        initialEventBodySchema.parse(args.body);
+        v.parse(initialEventBodySchema, args.body);
       }
 
       // 2. initialize entity
@@ -164,7 +166,7 @@ export function Entity<$$Schema>(
         type EventBody = InferEventBodyFromSchema<$$Schema, EventName>;
 
         const eventName = `${entityName}:${initialEventName}` as EventName;
-        const body = args.body as EventBody;
+        const body = v.parse(initialEventBodySchema, args.body) as EventBody;
 
         this.dispatch(eventName, body);
       }
@@ -191,14 +193,14 @@ export function Entity<$$Schema>(
       }
 
       // 1. create event
-      const event = {
+      const event = v.parse(eventSchema, {
         eventId: generateId(),
         eventName,
         eventCreatedAt: new Date().toISOString(),
         entityId: this.entityId,
         entityName: this.entityName,
         body,
-      } as $$Event;
+      }) as $$Event;
 
       // 2. add event to queue
       queuedEvents.push(event);
@@ -218,7 +220,7 @@ export function Entity<$$Schema>(
       // 0. prepare
       const reducer = this[" $$reducer"];
       const prevState = this[" $$state"];
-      const EventArraySchema = z.array(eventSchema);
+      const EventArraySchema = v.array(eventSchema);
 
       // 1. validate current state
       if (this[" $$state"] !== null) {
@@ -226,7 +228,7 @@ export function Entity<$$Schema>(
       }
 
       // 2. validate events
-      const events = EventArraySchema.parse(input) as $$Event[];
+      const events = v.parse(EventArraySchema, input) as $$Event[];
 
       // 3. compute state
       this[" $$state"] = events.reduce(reducer, prevState);
