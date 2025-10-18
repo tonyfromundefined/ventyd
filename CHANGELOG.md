@@ -1,5 +1,11 @@
 # ventyd
 
+## 1.1.1
+
+### Patch Changes
+
+- 556ba27: fix: export `EntityConstructor` interface
+
 ## 1.1.0
 
 ### Minor Changes
