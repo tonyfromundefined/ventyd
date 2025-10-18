@@ -235,3 +235,5 @@ export function Entity<$$Schema>(
     }
   };
 }
+
+export type { EntityConstructor };
