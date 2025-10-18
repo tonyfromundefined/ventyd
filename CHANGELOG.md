@@ -1,5 +1,11 @@
 # ventyd
 
+## 1.1.0
+
+### Minor Changes
+
+- d921917: feat: replace `zod` to `valibot`
+
 ## 1.0.2
 
 ### Patch Changes
