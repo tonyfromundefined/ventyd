@@ -45,10 +45,16 @@ export const createMongoDBStorage = (db: Db) => {
     /**
      * Commits new events to the storage.
      */
-    async commitEvents(args: { events: BaseEvent[] }): Promise<void> {
+    async commitEvents(args: {
+      events: BaseEvent[];
+      state: any;
+    }): Promise<void> {
       if (args.events.length === 0) return;
 
       await eventsCollection.insertMany(args.events as any);
+
+      // Note: In this implementation, we don't persist state separately
+      // since it can be reconstructed from events
     },
   });
 

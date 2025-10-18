@@ -13,6 +13,7 @@ describe("Entity Unit Tests", () => {
   describe("Entity Initialization", () => {
     test("should create entity with initial event", () => {
       const user = new User({
+        by: "INITIAL_EVENT",
         body: {
           nickname: "TestUser",
           email: "test@example.com",
@@ -37,6 +38,7 @@ describe("Entity Unit Tests", () => {
       const customId = "custom-id-123";
       const user = new User({
         entityId: customId,
+        by: "INITIAL_EVENT",
         body: {
           nickname: "CustomUser",
           email: "custom@example.com",
@@ -76,8 +78,14 @@ describe("Entity Unit Tests", () => {
 
       const TestEntity = Entity(schema, reducer);
 
-      const entity1 = new TestEntity({ body: { value: "first" } });
-      const entity2 = new TestEntity({ body: { value: "second" } });
+      const entity1 = new TestEntity({
+        by: "INITIAL_EVENT",
+        body: { value: "first" },
+      });
+      const entity2 = new TestEntity({
+        by: "INITIAL_EVENT",
+        body: { value: "second" },
+      });
 
       // generateId is called twice for entity1: once for entityId, once for the initial event's eventId
       expect(entity1.entityId).toBe("test-1000");
@@ -92,6 +100,7 @@ describe("Entity Unit Tests", () => {
   describe("Event Dispatching", () => {
     test("should queue events and update state", () => {
       const user = new User({
+        by: "INITIAL_EVENT",
         body: {
           nickname: "Alice",
           email: "alice@example.com",
@@ -128,6 +137,7 @@ describe("Entity Unit Tests", () => {
     test("should maintain event metadata correctly", () => {
       const user = new User({
         entityId: "user-456",
+        by: "INITIAL_EVENT",
         body: {
           nickname: "Bob",
           email: "bob@example.com",
@@ -151,6 +161,7 @@ describe("Entity Unit Tests", () => {
 
     test("should flush queued events", () => {
       const user = new User({
+        by: "INITIAL_EVENT",
         body: {
           nickname: "Charlie",
           email: "charlie@example.com",
@@ -216,6 +227,7 @@ describe("Entity Unit Tests", () => {
 
     test("should throw when hydrating already initialized entity", () => {
       const user = new User({
+        by: "INITIAL_EVENT",
         body: {
           nickname: "Eve",
           email: "eve@example.com",
@@ -273,6 +285,7 @@ describe("Entity Unit Tests", () => {
   describe("Business Logic Validation", () => {
     test("User: should enforce business rules", () => {
       const user = new User({
+        by: "INITIAL_EVENT",
         body: {
           nickname: "Frank",
           email: "frank@example.com",
@@ -305,6 +318,7 @@ describe("Entity Unit Tests", () => {
 
     test("Order: should enforce order workflow rules", () => {
       const order = new Order({
+        by: "INITIAL_EVENT",
         body: {
           customerId: "cust-123",
           items: [{ productId: "prod-1", quantity: 1, price: 99.99 }],
@@ -318,6 +332,7 @@ describe("Entity Unit Tests", () => {
 
       // Cannot confirm empty order
       const emptyOrder = new Order({
+        by: "INITIAL_EVENT",
         body: {
           customerId: "cust-456",
           items: [],
@@ -366,6 +381,7 @@ describe("Entity Unit Tests", () => {
 
     test("Order: should handle item operations correctly", () => {
       const order = new Order({
+        by: "INITIAL_EVENT",
         body: {
           customerId: "cust-789",
           items: [{ productId: "prod-1", quantity: 2, price: 50 }],
@@ -407,6 +423,7 @@ describe("Entity Unit Tests", () => {
 
     test("should return state after initialization", () => {
       const user = new User({
+        by: "INITIAL_EVENT",
         body: {
           nickname: "Grace",
           email: "grace@example.com",
@@ -423,6 +440,7 @@ describe("Entity Unit Tests", () => {
 
     test("should reflect state changes immediately", () => {
       const user = new User({
+        by: "INITIAL_EVENT",
         body: {
           nickname: "Henry",
           email: "henry@example.com",
@@ -447,6 +465,7 @@ describe("Entity Unit Tests", () => {
   describe("Edge Cases", () => {
     test("should handle optional event body fields", () => {
       const user = new User({
+        by: "INITIAL_EVENT",
         body: {
           nickname: "Ivy",
           email: "ivy@example.com",
@@ -466,6 +485,7 @@ describe("Entity Unit Tests", () => {
 
     test("should handle complex state transitions", () => {
       const order = new Order({
+        by: "INITIAL_EVENT",
         body: {
           customerId: "cust-complex",
           items: [
@@ -497,6 +517,7 @@ describe("Entity Unit Tests", () => {
 
     test("should generate unique event IDs", () => {
       const user = new User({
+        by: "INITIAL_EVENT",
         body: {
           nickname: "Jack",
           email: "jack@example.com",

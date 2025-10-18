@@ -141,27 +141,35 @@ export function Entity<$$Schema>(
      * const user3 = new User();
      * ```
      */
-    constructor(args?: {
-      entityId?: string;
-      body?: InferInitialEventBodyFromSchema<$$Schema>;
-    }) {
-      // 1. validate initial event body if provided
-      if (args?.body) {
-        if (!initialEventBodySchema) {
-          throw new Error(
-            `Body schema for initial event ${initialEventName} not found`,
-          );
-        }
-
-        // Validate body before setting any entity properties
-        v.parse(initialEventBodySchema, args.body);
-      }
-
-      // 2. initialize entity
+    constructor(
+      args?: {
+        entityId?: string;
+      } & (
+        | {
+            by?: undefined;
+            body?: undefined;
+            state?: undefined;
+          }
+        | {
+            by: "INITIAL_EVENT";
+            body: InferInitialEventBodyFromSchema<$$Schema>;
+          }
+        | {
+            by: "STATE";
+            state: $$State;
+          }
+      ),
+    ) {
+      // 1. initialize entity id
       this.entityId = args?.entityId ?? generateId();
 
+      // 2. initialize entity state
+      if (args?.by === "STATE") {
+        this[" $$state"] = args.state;
+      }
+
       // 3. dispatch initial event
-      if (args?.body) {
+      if (args?.by === "INITIAL_EVENT") {
         type EventName = InferEventNameFromSchema<$$Schema>;
         type EventBody = InferEventBodyFromSchema<$$Schema, EventName>;
 

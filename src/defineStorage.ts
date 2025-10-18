@@ -1,6 +1,7 @@
 import type {
   EventDefinitionInput,
   InferEventFromSchema,
+  InferStateFromSchema,
   Schema,
   StateDefinitionInput,
 } from "./schema-types";
@@ -58,6 +59,7 @@ export type Storage<
    */
   commitEvents(args: {
     events: InferEventFromSchema<$$Schema>[];
+    state: InferStateFromSchema<$$Schema>;
   }): Promise<void>;
 };
 

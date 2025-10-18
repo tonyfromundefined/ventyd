@@ -1,4 +1,7 @@
-import type { InferInitialEventBodyFromSchema } from "../schema-types";
+import type {
+  InferInitialEventBodyFromSchema,
+  InferStateFromSchema,
+} from "../schema-types";
 import type { Entity } from "./Entity";
 
 /**
@@ -12,10 +15,25 @@ export interface EntityConstructor<$$Schema> {
    **/
   schema: $$Schema;
 
-  new (args?: {
-    entityId?: string;
-    body?: InferInitialEventBodyFromSchema<$$Schema>;
-  }): Entity<$$Schema>;
+  new (
+    args?: {
+      entityId?: string;
+    } & (
+      | {
+          by?: undefined;
+          body?: undefined;
+          state?: undefined;
+        }
+      | {
+          by: "INITIAL_EVENT";
+          body: InferInitialEventBodyFromSchema<$$Schema>;
+        }
+      | {
+          by: "STATE";
+          state: InferStateFromSchema<$$Schema>;
+        }
+    ),
+  ): Entity<$$Schema>;
 }
 
 /**

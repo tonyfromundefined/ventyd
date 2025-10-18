@@ -75,7 +75,10 @@ export const createSQLiteStorage = (db: Database.Database) => {
     /**
      * Commits new events to the storage.
      */
-    async commitEvents(args: { events: BaseEvent[] }): Promise<void> {
+    async commitEvents(args: {
+      events: BaseEvent[];
+      state: any;
+    }): Promise<void> {
       if (args.events.length === 0) return;
 
       const insertMany = db.transaction((events: any[]) => {
@@ -92,6 +95,9 @@ export const createSQLiteStorage = (db: Database.Database) => {
       });
 
       insertMany(args.events);
+
+      // Note: In this implementation, we don't persist state separately
+      // since it can be reconstructed from events
     },
   });
 

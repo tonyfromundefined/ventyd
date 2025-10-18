@@ -47,6 +47,7 @@ getAllStorageFactories().forEach((factory) => {
         });
 
         const user = new User({
+          by: "INITIAL_EVENT",
           body: {
             nickname: "TestUser",
             email: "test@example.com",
@@ -82,6 +83,7 @@ getAllStorageFactories().forEach((factory) => {
         });
 
         const user = new User({
+          by: "INITIAL_EVENT",
           body: {
             nickname: "EmptyCommitUser",
             email: "empty@commit.com",
@@ -109,6 +111,7 @@ getAllStorageFactories().forEach((factory) => {
         // First commit - create
         const user1 = new User({
           entityId: userId,
+          by: "INITIAL_EVENT",
           body: {
             nickname: "Initial",
             email: "initial@example.com",
@@ -139,6 +142,7 @@ getAllStorageFactories().forEach((factory) => {
         });
 
         const order = new Order({
+          by: "INITIAL_EVENT",
           body: {
             customerId: "customer-order-test",
             items: [{ productId: "prod-1", quantity: 1, price: 100 }],
@@ -177,6 +181,7 @@ getAllStorageFactories().forEach((factory) => {
         // Day 1: User signs up
         const user = new User({
           entityId: userId,
+          by: "INITIAL_EVENT",
           body: {
             nickname: "TimeTravel",
             email: "time@travel.com",
@@ -270,7 +275,22 @@ getAllStorageFactories().forEach((factory) => {
           },
         ];
 
-        await storage.commitEvents({ events: events as any });
+        // Create the state that would result from these events
+        const state = {
+          customerId: "customer-123",
+          items: [{ productId: "B", quantity: 2, price: 50 }],
+          status: "confirmed" as const,
+          totalAmount: 100,
+          paymentMethod: "card" as const,
+          shipping: undefined,
+          deliveredAt: undefined,
+          cancelReason: undefined,
+        };
+
+        await storage.commitEvents({
+          events: events as any,
+          state: state as any,
+        });
 
         const orderRepo = createRepository(Order, {
           storage,
@@ -314,7 +334,18 @@ getAllStorageFactories().forEach((factory) => {
           },
         ];
 
-        await storage.commitEvents({ events: oldEvents as any });
+        // Create the state that would result from these events
+        const state = {
+          nickname: "LegacyUser",
+          email: "legacy@old.com",
+          bio: "Migrated from v1",
+          isDeleted: false,
+        };
+
+        await storage.commitEvents({
+          events: oldEvents as any,
+          state: state as any,
+        });
 
         const repository = createRepository(User, {
           storage,
@@ -335,6 +366,7 @@ getAllStorageFactories().forEach((factory) => {
         });
 
         const user = new User({
+          by: "INITIAL_EVENT",
           body: {
             nickname: "OrderTest",
             email: "order@test.com",
@@ -379,6 +411,7 @@ getAllStorageFactories().forEach((factory) => {
         });
 
         const order = new Order({
+          by: "INITIAL_EVENT",
           body: {
             customerId: "customer-comp",
             items: [
@@ -430,6 +463,7 @@ getAllStorageFactories().forEach((factory) => {
         // Customer starts shopping
         const cart = new Order({
           entityId: "cart-001",
+          by: "INITIAL_EVENT",
           body: {
             customerId: "shopper-001",
             items: [
@@ -479,6 +513,7 @@ getAllStorageFactories().forEach((factory) => {
         // User registration
         const user = new User({
           entityId: "lifecycle-user",
+          by: "INITIAL_EVENT",
           body: {
             nickname: "JohnDoe",
             email: "john@lifecycle.com",
@@ -539,6 +574,7 @@ getAllStorageFactories().forEach((factory) => {
         // Simulate multiple orders being processed concurrently
         const orderPromises = Array.from({ length: 10 }, async (_, i) => {
           const order = new Order({
+            by: "INITIAL_EVENT",
             body: {
               customerId: `customer-${i}`,
               items: [
@@ -610,6 +646,7 @@ getAllStorageFactories().forEach((factory) => {
         // Create user with shared ID
         const user = new User({
           entityId: sharedId,
+          by: "INITIAL_EVENT",
           body: {
             nickname: "IsolatedUser",
             email: "isolated@example.com",
@@ -620,6 +657,7 @@ getAllStorageFactories().forEach((factory) => {
         // Create order with same ID
         const order = new Order({
           entityId: sharedId,
+          by: "INITIAL_EVENT",
           body: {
             customerId: "isolated-customer",
             items: [{ productId: "iso-prod", quantity: 1, price: 99.99 }],
@@ -643,6 +681,7 @@ getAllStorageFactories().forEach((factory) => {
         // Create multiple users concurrently
         const userPromises = Array.from({ length: 5 }, async (_, i) => {
           const user = new User({
+            by: "INITIAL_EVENT",
             body: {
               nickname: `ConcurrentUser${i}`,
               email: `concurrent${i}@example.com`,
@@ -675,6 +714,7 @@ getAllStorageFactories().forEach((factory) => {
         // Create initial order
         const order = new Order({
           entityId: "concurrent-order",
+          by: "INITIAL_EVENT",
           body: {
             customerId: "concurrent-customer",
             items: [{ productId: "initial", quantity: 1, price: 50 }],
@@ -720,6 +760,7 @@ getAllStorageFactories().forEach((factory) => {
 
         const user = new User({
           entityId: "perf-test-user",
+          by: "INITIAL_EVENT",
           body: {
             nickname: "PerfUser",
             email: "perf@test.com",
@@ -763,6 +804,7 @@ getAllStorageFactories().forEach((factory) => {
           });
 
           const user = new User({
+            by: "INITIAL_EVENT",
             body: {
               nickname: "IndexTest",
               email: "index@test.com",
@@ -787,6 +829,7 @@ getAllStorageFactories().forEach((factory) => {
           });
 
           const order = new Order({
+            by: "INITIAL_EVENT",
             body: {
               customerId: "transaction-test",
               items: [{ productId: "tx-prod", quantity: 1, price: 100 }],

@@ -184,6 +184,7 @@ export function createRepository<
       // 2. commit events to storage
       await args.storage.commitEvents({
         events: queuedEvents,
+        state: _entity.state,
       });
 
       // 3. flush queued events

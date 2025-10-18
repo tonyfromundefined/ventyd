@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
+
 import { defineStorage } from "../../src/defineStorage";
 
 type BaseEvent = {
@@ -31,12 +33,17 @@ export const createInMemoryStorage = () => {
     /**
      * Commits new events to the storage.
      */
-    async commitEvents(args: { events: BaseEvent[] }): Promise<void> {
+    async commitEvents(args: {
+      events: BaseEvent[];
+      state: any;
+    }): Promise<void> {
       for (const event of args.events) {
         const key = `${event.entityName}:${event.entityId}`;
         const existing = events.get(key) || [];
         events.set(key, [...existing, event]);
       }
+      // Note: In this simple implementation, we don't persist state separately
+      // since it can be reconstructed from events
     },
   });
 
