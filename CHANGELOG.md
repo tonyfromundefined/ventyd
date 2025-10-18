@@ -1,5 +1,11 @@
 # ventyd
 
+## 1.2.0
+
+### Minor Changes
+
+- 291dc02: feat: support snapshot feature (can commit snapshot and can initialize entity with state)
+
 ## 1.1.1
 
 ### Patch Changes
