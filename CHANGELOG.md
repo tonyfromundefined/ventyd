@@ -1,5 +1,11 @@
 # ventyd
 
+## 1.3.0
+
+### Minor Changes
+
+- 092ad6c: feat: readonly model and create instance with static method not constructor (`Entity.create()`, `Entity.load()`)
+
 ## 1.2.0
 
 ### Minor Changes
