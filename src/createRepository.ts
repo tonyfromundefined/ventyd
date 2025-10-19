@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import type { Storage } from "./defineStorage";
+import type { Adapter } from "./Adapter";
 import type {
   Entity,
   EntityConstructor,
@@ -83,23 +83,24 @@ export type Repository<$$Entity> = {
  *
  * @param entity - The entity class created with `class MyEntity extends Entity()`
  * @param args - Repository configuration
- * @param args.storage - The storage backend implementation created with `defineStorage()`
+ * @param args.adapter - The adapter implementation for persistence
  *
  * @returns A repository instance with type-safe operations
  *
  * @remarks
  * The repository serves as the bridge between your domain entities and the
- * underlying storage mechanism. It ensures that all persistence operations
+ * underlying persistence mechanism. It ensures that all persistence operations
  * maintain the integrity of the event sourcing pattern.
  *
  * ```
- * Entity → dispatch() → queuedEvents → commit() → Storage
+ * Entity → dispatch() → queuedEvents → commit() → Adapter
  * ```
  *
  *
  * @example
  * ```typescript
- * import { createRepository, Entity, defineSchema, defineReducer, defineStorage } from 'ventyd';
+ * import { createRepository, Entity, defineSchema, defineReducer } from 'ventyd';
+ * import type { Adapter } from 'ventyd';
  *
  * // Define your entity
  * const userSchema = defineSchema("user", {...});
@@ -108,19 +109,19 @@ export type Repository<$$Entity> = {
  *   // ...
  * }
  *
- * // Create storage backend
- * const storage = defineStorage({
+ * // Create adapter implementation
+ * const adapter: Adapter = {
  *   async getEventsByEntityId({ entityName, entityId }) {
  *     // Implementation for retrieving events
  *   },
  *   async commitEvents({ events }) {
  *     // Implementation for storing events
  *   }
- * });
+ * };
  *
- * // Create repository with storage
+ * // Create repository with adapter
  * const userRepository = createRepository(User, {
- *   storage: storage
+ *   adapter: adapter
  * });
  *
  * // Use the repository
@@ -136,7 +137,7 @@ export function createRepository<
 >(
   entity: $$EntityConstructor,
   args: {
-    storage: Storage<InferSchemaFromEntityConstructor<$$EntityConstructor>>;
+    adapter: Adapter<InferSchemaFromEntityConstructor<$$EntityConstructor>>;
   },
 ): Repository<ConstructorReturnType<$$EntityConstructor>> {
   type $$Schema = InferSchemaFromEntityConstructor<$$EntityConstructor>;
@@ -155,12 +156,12 @@ export function createRepository<
   return {
     async findOne({ entityId }) {
       // 1. query events by entity ID
-      const rawEvents = await args.storage.getEventsByEntityId({
+      const rawEvents = await args.adapter.getEventsByEntityId({
         entityName: entityName,
         entityId: entityId,
       });
 
-      // 2. validate events from storage using the schema
+      // 2. validate events from adapter using the schema
       const EventArraySchema = v.array(eventSchema);
       const events = v.parse(EventArraySchema, rawEvents) as $$Event[];
 
@@ -180,8 +181,8 @@ export function createRepository<
       // 1. copy queued events
       const queuedEvents = [..._entity[" $$queuedEvents"]];
 
-      // 2. commit events to storage
-      await args.storage.commitEvents({
+      // 2. commit events to adapter
+      await args.adapter.commitEvents({
         events: queuedEvents,
         state: _entity.state,
       });

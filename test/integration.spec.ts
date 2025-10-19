@@ -2,32 +2,32 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
 
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import type { Adapter } from "../src/Adapter";
 import { createRepository } from "../src/createRepository";
-import type { Storage } from "../src/defineStorage";
+import { getAllAdapterFactories } from "./adapters";
 import { Order } from "./entities/Order";
 import { User } from "./entities/User";
-import { getAllStorageFactories } from "./storages";
 
 /**
  * Integration test suite that validates the complete event sourcing system
- * across different storage backends to ensure consistent behavior.
+ * across different adapter backends to ensure consistent behavior.
  *
  * Tests the full stack including:
  * - Entity lifecycle management
  * - Event sourcing patterns
  * - Repository operations
  *
- * Runs against all available storage backends:
+ * Runs against all available adapter backends:
  * - InMemory (for development and testing)
  * - MongoDB (for production deployments)
  * - SQLite (for edge computing and embedded scenarios)
  */
-getAllStorageFactories().forEach((factory) => {
-  describe(`Integration Tests with ${factory.type.toUpperCase()} Storage`, () => {
-    let storage: Storage;
+getAllAdapterFactories().forEach((factory) => {
+  describe(`Integration Tests with ${factory.type.toUpperCase()} Adapter`, () => {
+    let adapter: Adapter;
 
     beforeEach(async () => {
-      storage = await factory.create();
+      adapter = await factory.create();
     });
 
     afterEach(async () => {
@@ -43,7 +43,7 @@ getAllStorageFactories().forEach((factory) => {
     describe("1. Basic Operations", () => {
       test("should create and retrieve entities", async () => {
         const repository = createRepository(User, {
-          storage,
+          adapter,
         });
 
         const user = User.create({
@@ -66,7 +66,7 @@ getAllStorageFactories().forEach((factory) => {
 
       test("should return null for non-existent entities", async () => {
         const repository = createRepository(User, {
-          storage,
+          adapter,
         });
 
         const result = await repository.findOne({
@@ -78,7 +78,7 @@ getAllStorageFactories().forEach((factory) => {
 
       test("should handle empty commits gracefully", async () => {
         const repository = createRepository(User, {
-          storage,
+          adapter,
         });
 
         const user = User.create({
@@ -101,7 +101,7 @@ getAllStorageFactories().forEach((factory) => {
 
       test("should persist events across multiple commits", async () => {
         const repository = createRepository(User, {
-          storage,
+          adapter,
         });
 
         const userId = "persistent-user-id";
@@ -135,7 +135,7 @@ getAllStorageFactories().forEach((factory) => {
 
       test("should maintain correct event order", async () => {
         const repository = createRepository(Order, {
-          storage,
+          adapter,
         });
 
         const order = Order.create({
@@ -169,7 +169,7 @@ getAllStorageFactories().forEach((factory) => {
     describe("2. Event Sourcing Core Features", () => {
       test("should support time travel through event history", async () => {
         const repository = createRepository(User, {
-          storage,
+          adapter,
         });
 
         const userId = "time-travel-user";
@@ -209,7 +209,7 @@ getAllStorageFactories().forEach((factory) => {
         expect(finalUser?.isDeleted).toBe(false);
 
         // Verify complete event history
-        const events = await storage.getEventsByEntityId({
+        const events = await adapter.getEventsByEntityId({
           entityName: "user",
           entityId: userId,
         });
@@ -282,13 +282,13 @@ getAllStorageFactories().forEach((factory) => {
           cancelReason: undefined,
         };
 
-        await storage.commitEvents({
+        await adapter.commitEvents({
           events: events as any,
           state: state as any,
         });
 
         const orderRepo = createRepository(Order, {
-          storage,
+          adapter,
         });
 
         const reconstructed = await orderRepo.findOne({
@@ -337,13 +337,13 @@ getAllStorageFactories().forEach((factory) => {
           isDeleted: false,
         };
 
-        await storage.commitEvents({
+        await adapter.commitEvents({
           events: oldEvents as any,
           state: state as any,
         });
 
         const repository = createRepository(User, {
-          storage,
+          adapter,
         });
 
         const migratedUser = await repository.findOne({
@@ -357,7 +357,7 @@ getAllStorageFactories().forEach((factory) => {
 
       test("should preserve chronological event order", async () => {
         const userRepo = createRepository(User, {
-          storage,
+          adapter,
         });
 
         const user = User.create({
@@ -378,7 +378,7 @@ getAllStorageFactories().forEach((factory) => {
         expect(retrieved?.bio).toBe("Update 9"); // Last update wins
 
         // Check event order
-        const events = await storage.getEventsByEntityId({
+        const events = await adapter.getEventsByEntityId({
           entityName: "user",
           entityId: user.entityId,
         });
@@ -401,7 +401,7 @@ getAllStorageFactories().forEach((factory) => {
     describe("3. Advanced Patterns", () => {
       test("should support compensating transactions", async () => {
         const repository = createRepository(Order, {
-          storage,
+          adapter,
         });
 
         const order = Order.create({
@@ -435,7 +435,7 @@ getAllStorageFactories().forEach((factory) => {
         );
 
         // All original events are preserved
-        const events = await storage.getEventsByEntityId({
+        const events = await adapter.getEventsByEntityId({
           entityName: "order",
           entityId: order.entityId,
         });
@@ -450,7 +450,7 @@ getAllStorageFactories().forEach((factory) => {
     describe("4. Business Scenarios", () => {
       test("should handle shopping cart lifecycle", async () => {
         const orderRepo = createRepository(Order, {
-          storage,
+          adapter,
         });
 
         // Customer starts shopping
@@ -499,7 +499,7 @@ getAllStorageFactories().forEach((factory) => {
 
       test("should handle user account lifecycle", async () => {
         const userRepo = createRepository(User, {
-          storage,
+          adapter,
         });
 
         // User registration
@@ -550,7 +550,7 @@ getAllStorageFactories().forEach((factory) => {
         expect(finalUser?.isDeleted).toBe(false);
 
         // Check event count
-        const events = await storage.getEventsByEntityId({
+        const events = await adapter.getEventsByEntityId({
           entityName: "user",
           entityId: "lifecycle-user",
         });
@@ -559,7 +559,7 @@ getAllStorageFactories().forEach((factory) => {
 
       test("should process concurrent orders", async () => {
         const orderRepo = createRepository(Order, {
-          storage,
+          adapter,
         });
 
         // Simulate multiple orders being processed concurrently
@@ -624,11 +624,11 @@ getAllStorageFactories().forEach((factory) => {
     describe("5. Isolation and Concurrency", () => {
       test("should isolate entities of different types with same ID", async () => {
         const userRepo = createRepository(User, {
-          storage,
+          adapter,
         });
 
         const orderRepo = createRepository(Order, {
-          storage,
+          adapter,
         });
 
         const sharedId = "shared-id-isolation";
@@ -663,7 +663,7 @@ getAllStorageFactories().forEach((factory) => {
 
       test("should handle concurrent entity creation", async () => {
         const repository = createRepository(User, {
-          storage,
+          adapter,
         });
 
         // Create multiple users concurrently
@@ -695,7 +695,7 @@ getAllStorageFactories().forEach((factory) => {
 
       test("should handle concurrent updates on same entity", async () => {
         const repository = createRepository(Order, {
-          storage,
+          adapter,
         });
 
         // Create initial order
@@ -741,7 +741,7 @@ getAllStorageFactories().forEach((factory) => {
     describe("6. Performance Testing", () => {
       test("should handle large number of events efficiently", async () => {
         const repository = createRepository(User, {
-          storage,
+          adapter,
         });
 
         const user = User.create({
@@ -778,14 +778,14 @@ getAllStorageFactories().forEach((factory) => {
     });
 
     /**
-     * Section 7: Storage-Specific Features
-     * Tests features specific to each storage implementation
+     * Section 7: Adapter-Specific Features
+     * Tests features specific to each adapter implementation
      */
     if (factory.type === "mongodb") {
       describe("7. MongoDB-Specific Features", () => {
         test("should utilize indexes for performance", async () => {
           const repository = createRepository(User, {
-            storage,
+            adapter,
           });
 
           const user = User.create({
@@ -809,7 +809,7 @@ getAllStorageFactories().forEach((factory) => {
       describe("7. SQLite-Specific Features", () => {
         test("should use transactions for batch operations", async () => {
           const repository = createRepository(Order, {
-            storage,
+            adapter,
           });
 
           const order = Order.create({

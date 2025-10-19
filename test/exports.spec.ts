@@ -1,3 +1,6 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
+/** biome-ignore-all lint/correctness/noUnusedVariables: for testing */
+
 import { describe, expect, test } from "vitest";
 
 describe("Package Exports", () => {
@@ -9,7 +12,8 @@ describe("Package Exports", () => {
     expect(mainExports.createRepository).toBeDefined();
     expect(mainExports.defineReducer).toBeDefined();
     expect(mainExports.defineSchema).toBeDefined();
-    expect(mainExports.defineStorage).toBeDefined();
+
+    // Adapter type is type-only export, no runtime check
 
     // Valibot re-export
     expect(mainExports.v).toBeDefined();
