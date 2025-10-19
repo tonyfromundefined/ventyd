@@ -90,6 +90,4 @@ export interface Entity<$$Schema> {
 
   /** @internal */
   " $$flush": () => void;
-  /** @internal */
-  " $$hydrate": (events: InferEventFromSchema<$$Schema>[]) => void;
 }

@@ -10,6 +10,7 @@ export { Entity } from "./Entity";
 // Type Helpers
 export type {
   EntityConstructor,
+  EntityConstructorArgs,
   InferSchemaFromEntityConstructor,
 } from "./entity-types";
 export type {

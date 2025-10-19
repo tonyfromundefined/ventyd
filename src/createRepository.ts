@@ -160,7 +160,7 @@ export function createRepository<
         entityId: entityId,
       });
 
-      // validate events from storage using the schema
+      // 2. validate events from storage using the schema
       const EventArraySchema = v.array(eventSchema);
       const events = v.parse(EventArraySchema, rawEvents) as $$Event[];
 
@@ -168,9 +168,8 @@ export function createRepository<
         return null;
       }
 
-      // 2. hydrate entity
-      const entity = new MyEntity({ entityId });
-      entity[" $$hydrate"](events);
+      // 3. load entity from events
+      const entity = MyEntity[" $$loadFromEvents"]({ entityId, events });
 
       return entity as $$ExtendedEntityType;
     },
