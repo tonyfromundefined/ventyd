@@ -1,15 +1,9 @@
 export * as v from "valibot";
-
-// Functions
+export type { Adapter } from "./Adapter";
 export { createRepository, type Repository } from "./createRepository";
 export { defineReducer, type Reducer } from "./defineReducer";
 export { defineSchema } from "./defineSchema";
 export { Entity } from "./Entity";
-
-// Types
-export type { Adapter } from "./Adapter";
-
-// Type Helpers
 export type {
   EntityConstructor,
   EntityConstructorArgs,

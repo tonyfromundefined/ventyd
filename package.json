@@ -22,7 +22,7 @@
   ],
   "scripts": {
     "build": "bunchee",
-    "format": "biome format --write",
+    "format": "biome check --write --unsafe .",
     "release": "changeset publish",
     "test": "vitest run ./test",
     "typecheck": "tsc --noEmit"

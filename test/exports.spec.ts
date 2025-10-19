@@ -1,3 +1,6 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
+/** biome-ignore-all lint/correctness/noUnusedVariables: for testing */
+
 import { describe, expect, test } from "vitest";
 
 describe("Package Exports", () => {
