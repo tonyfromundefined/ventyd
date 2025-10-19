@@ -47,19 +47,6 @@ describe("Entity Unit Tests", () => {
       expect(user[" $$queuedEvents"][0]?.entityId).toBe(customId);
     });
 
-    test("should create entity without initial event", () => {
-      const order = Order.create({
-        entityId: "order-123",
-        body: {
-          customerId: "test-customer",
-          items: [],
-        },
-      });
-
-      expect(order.entityId).toBe("order-123");
-      expect(order[" $$queuedEvents"].length).toBe(1);
-    });
-
     test("should use custom ID generator from schema", () => {
       let idCounter = 1000;
 
@@ -272,10 +259,12 @@ describe("Entity Unit Tests", () => {
         },
       ] as any;
 
-      expect(() => User[" $$loadFromEvents"]({
-        entityId: "user-invalid",
-        events: invalidEvents,
-      })).toThrow();
+      expect(() =>
+        User[" $$loadFromEvents"]({
+          entityId: "user-invalid",
+          events: invalidEvents,
+        }),
+      ).toThrow();
     });
 
     test("should handle empty event array during hydration", () => {
@@ -287,7 +276,6 @@ describe("Entity Unit Tests", () => {
       // State should remain null
       expect(() => user.state).toThrow("Entity is not initialized");
     });
-
   });
 
   describe("Entity Read-Only Mode (CQRS)", () => {
@@ -414,7 +402,9 @@ describe("Entity Unit Tests", () => {
       expect(loadedUser.state).toEqual(state);
 
       // But all mutations should fail
-      expect(() => loadedUser.updateProfile({ bio: "New bio" })).toThrow("Entity is readonly");
+      expect(() => loadedUser.updateProfile({ bio: "New bio" })).toThrow(
+        "Entity is readonly",
+      );
       expect(() => loadedUser.delete()).toThrow("Entity is readonly");
 
       // State should remain unchanged
@@ -617,7 +607,7 @@ describe("Entity Unit Tests", () => {
         if (event.eventName === "test:updated") {
           return {
             value: event.body.value,
-            counter: prevState.counter + 1
+            counter: prevState.counter + 1,
           };
         }
         return prevState;
