@@ -4,8 +4,10 @@ export * as v from "valibot";
 export { createRepository, type Repository } from "./createRepository";
 export { defineReducer, type Reducer } from "./defineReducer";
 export { defineSchema } from "./defineSchema";
-export { defineStorage, type Storage } from "./defineStorage";
 export { Entity } from "./Entity";
+
+// Types
+export type { Adapter } from "./Adapter";
 
 // Type Helpers
 export type {

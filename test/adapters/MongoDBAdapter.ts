@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
 
 import type { Collection, Db } from "mongodb";
-import { defineStorage } from "../../src/defineStorage";
+import type { Adapter } from "../../src/Adapter";
 
 type BaseEvent = {
   eventId: string;
@@ -13,13 +13,13 @@ type BaseEvent = {
 };
 
 /**
- * MongoDB storage implementation for event sourcing.
- * This storage uses MongoDB to persist events.
+ * MongoDB adapter implementation for event sourcing.
+ * This adapter uses MongoDB to persist events.
  */
-export const createMongoDBStorage = (db: Db) => {
+export const createMongoDBAdapter = (db: Db): MongoDBAdapter => {
   const eventsCollection: Collection<BaseEvent> = db.collection("events");
 
-  const storage = defineStorage({
+  const adapter: Adapter = {
     /**
      * Retrieves all events for a specific entity.
      */
@@ -43,7 +43,7 @@ export const createMongoDBStorage = (db: Db) => {
     },
 
     /**
-     * Commits new events to the storage.
+     * Commits new events to the adapter.
      */
     async commitEvents(args: {
       events: BaseEvent[];
@@ -56,10 +56,10 @@ export const createMongoDBStorage = (db: Db) => {
       // Note: In this implementation, we don't persist state separately
       // since it can be reconstructed from events
     },
-  });
+  };
 
   return {
-    ...storage,
+    ...adapter,
     /**
      * Utility method to clear all events (useful for test cleanup).
      */
@@ -100,4 +100,9 @@ export const createMongoDBStorage = (db: Db) => {
   };
 };
 
-export type MongoDBStorage = ReturnType<typeof createMongoDBStorage>;
+export type MongoDBAdapter = Adapter & {
+  clear(): Promise<void>;
+  getAllEvents(): Promise<BaseEvent[]>;
+  getEventCount(entityName: string, entityId: string): Promise<number>;
+  close(): Promise<void>;
+};

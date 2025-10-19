@@ -5,7 +5,7 @@ A TypeScript-first event sourcing library with full type safety and flexible sto
 ## Features
 
 - **Type-Safe Event Sourcing**: Full TypeScript support with Valibot schema validation
-- **Multiple Storage Backends**: In-memory, MongoDB, SQLite, and custom storage adapters
+- **Flexible Adapter Pattern**: Connect to any database through a simple interface
 - **Event-Driven Architecture**: Capture all state changes as immutable events
 - **Time Travel**: Reconstruct entity state at any point in history
 - **Lightweight**: Minimal dependencies, focused on core functionality
@@ -140,18 +140,19 @@ class User extends Entity(userSchema, userReducer) {
 }
 ```
 
-### 4. Set Up Storage and Repository
+### 4. Set Up Adapter and Repository
 
-Configure your storage backend and create a repository:
+Create an adapter implementation and configure your repository:
 
 ```typescript
-import { createRepository, defineStorage } from 'ventyd';
+import { createRepository } from 'ventyd';
+import type { Adapter } from 'ventyd';
 
-// Create in-memory storage for development using a factory function
-const createInMemoryStorage = () => {
+// Create in-memory adapter for development
+const createInMemoryAdapter = (): Adapter => {
   const eventStore: any[] = [];
 
-  return defineStorage({
+  return {
     async getEventsByEntityId({ entityName, entityId }) {
       // Implementation for retrieving events
       return eventStore.filter(e =>
@@ -163,14 +164,14 @@ const createInMemoryStorage = () => {
       // Implementation for storing events
       eventStore.push(...events);
     }
-  });
+  };
 };
 
-const storage = createInMemoryStorage();
+const adapter = createInMemoryAdapter();
 
 // Create a repository for your entity
 const userRepository = createRepository(User, {
-  storage,
+  adapter,
 });
 ```
 
@@ -253,17 +254,19 @@ Reducers are pure functions that compute state from events:
 - Should not have side effects
 - Handle all possible event types for the entity
 
-## Storage Backends
+## Adapter Implementations
 
-### In-Memory Storage
+### In-Memory Adapter
 
 Perfect for development and testing:
 
 ```typescript
-const createInMemoryStorage = () => {
+import type { Adapter } from 'ventyd';
+
+const createInMemoryAdapter = (): Adapter => {
   const events: any[] = [];
 
-  return defineStorage({
+  return {
     async getEventsByEntityId({ entityName, entityId }) {
       return events.filter(e =>
         e.entityName === entityName &&
@@ -273,25 +276,26 @@ const createInMemoryStorage = () => {
     async commitEvents({ events: newEvents }) {
       events.push(...newEvents);
     }
-  });
+  };
 };
 
-const storage = createInMemoryStorage();
+const adapter = createInMemoryAdapter();
 ```
 
-### MongoDB Storage
+### MongoDB Adapter
 
 For production deployments:
 
 ```typescript
+import type { Adapter } from 'ventyd';
 import { MongoClient } from 'mongodb';
 
-const createMongoDBStorage = (uri: string, dbName: string) => {
+const createMongoDBAdapter = (uri: string, dbName: string): Adapter => {
   const client = new MongoClient(uri);
   const db = client.db(dbName);
   const eventsCollection = db.collection('events');
 
-  return defineStorage({
+  return {
     async getEventsByEntityId({ entityName, entityId }) {
       return eventsCollection
         .find({ entityName, entityId })
@@ -303,10 +307,10 @@ const createMongoDBStorage = (uri: string, dbName: string) => {
         await eventsCollection.insertMany(events);
       }
     }
-  });
+  };
 };
 
-const storage = createMongoDBStorage('mongodb://localhost:27017', 'myapp');
+const adapter = createMongoDBAdapter('mongodb://localhost:27017', 'myapp');
 ```
 
 ## Best Practices

@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
 
-import { defineStorage } from "../../src/defineStorage";
+import type { Adapter } from "../../src/Adapter";
 
 type BaseEvent = {
   eventId: string;
@@ -12,13 +12,13 @@ type BaseEvent = {
 };
 
 /**
- * In-memory storage implementation for testing purposes.
- * This storage keeps all events in memory using a Map structure.
+ * In-memory adapter implementation for testing purposes.
+ * This adapter keeps all events in memory using a Map structure.
  */
-export const createInMemoryStorage = () => {
+export const createInMemoryAdapter = (): InMemoryAdapter => {
   const events: Map<string, BaseEvent[]> = new Map();
 
-  const storage = defineStorage({
+  const adapter: Adapter = {
     /**
      * Retrieves all events for a specific entity.
      */
@@ -31,7 +31,7 @@ export const createInMemoryStorage = () => {
     },
 
     /**
-     * Commits new events to the storage.
+     * Commits new events to the adapter.
      */
     async commitEvents(args: {
       events: BaseEvent[];
@@ -45,10 +45,10 @@ export const createInMemoryStorage = () => {
       // Note: In this simple implementation, we don't persist state separately
       // since it can be reconstructed from events
     },
-  });
+  };
 
   return {
-    ...storage,
+    ...adapter,
     /**
      * Utility method to clear all events (useful for test cleanup).
      */
@@ -77,4 +77,8 @@ export const createInMemoryStorage = () => {
   };
 };
 
-export type InMemoryStorage = ReturnType<typeof createInMemoryStorage>;
+export type InMemoryAdapter = Adapter & {
+  clear(): void;
+  getAllEvents(): BaseEvent[];
+  getEventCount(entityName: string, entityId: string): number;
+};

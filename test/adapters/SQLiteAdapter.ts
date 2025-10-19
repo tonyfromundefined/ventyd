@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
 
 import type Database from "better-sqlite3";
-import { defineStorage } from "../../src/defineStorage";
+import type { Adapter } from "../../src/Adapter";
 
 type BaseEvent = {
   eventId: string;
@@ -13,10 +13,10 @@ type BaseEvent = {
 };
 
 /**
- * SQLite storage implementation for event sourcing.
- * This storage uses SQLite to persist events.
+ * SQLite adapter implementation for event sourcing.
+ * This adapter uses SQLite to persist events.
  */
-export const createSQLiteStorage = (db: Database.Database) => {
+export const createSQLiteAdapter = (db: Database.Database): SQLiteAdapter => {
   // Create events table
   db.exec(`
     CREATE TABLE IF NOT EXISTS events (
@@ -52,7 +52,7 @@ export const createSQLiteStorage = (db: Database.Database) => {
     ORDER BY event_created_at ASC
   `);
 
-  const storage = defineStorage({
+  const adapter: Adapter = {
     /**
      * Retrieves all events for a specific entity.
      */
@@ -73,7 +73,7 @@ export const createSQLiteStorage = (db: Database.Database) => {
     },
 
     /**
-     * Commits new events to the storage.
+     * Commits new events to the adapter.
      */
     async commitEvents(args: {
       events: BaseEvent[];
@@ -99,10 +99,10 @@ export const createSQLiteStorage = (db: Database.Database) => {
       // Note: In this implementation, we don't persist state separately
       // since it can be reconstructed from events
     },
-  });
+  };
 
   return {
-    ...storage,
+    ...adapter,
     /**
      * Utility method to clear all events (useful for test cleanup).
      */
@@ -150,4 +150,9 @@ export const createSQLiteStorage = (db: Database.Database) => {
   };
 };
 
-export type SQLiteStorage = ReturnType<typeof createSQLiteStorage>;
+export type SQLiteAdapter = Adapter & {
+  clear(): Promise<void>;
+  getAllEvents(): Promise<BaseEvent[]>;
+  getEventCount(entityName: string, entityId: string): Promise<number>;
+  close(): Promise<void>;
+};
