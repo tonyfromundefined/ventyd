@@ -1,8 +1,26 @@
 import type {
+  InferEventFromSchema,
   InferInitialEventBodyFromSchema,
   InferStateFromSchema,
 } from "../schema-types";
 import type { Entity } from "./Entity";
+
+export type EntityConstructorArgs<$$Schema> =
+  | {
+      type: "create";
+      entityId?: string;
+      body: InferInitialEventBodyFromSchema<$$Schema>;
+    }
+  | {
+      type: "load";
+      entityId: string;
+      state: InferStateFromSchema<$$Schema>;
+    }
+  | {
+      type: "loadFromEvents";
+      entityId: string;
+      events: InferEventFromSchema<$$Schema>[];
+    };
 
 /**
  * Internal interface defining the constructor for an Entity instance.
@@ -15,25 +33,49 @@ export interface EntityConstructor<$$Schema> {
    **/
   schema: $$Schema;
 
-  new (
-    args?: {
+  /**
+   * Creates a new entity instance with the given initial event body.
+   */
+  create: <T>(
+    this: new (
+      args: EntityConstructorArgs<$$Schema>,
+    ) => T,
+    args: {
       entityId?: string;
-    } & (
-      | {
-          by?: undefined;
-          body?: undefined;
-          state?: undefined;
-        }
-      | {
-          by: "INITIAL_EVENT";
-          body: InferInitialEventBodyFromSchema<$$Schema>;
-        }
-      | {
-          by: "STATE";
-          state: InferStateFromSchema<$$Schema>;
-        }
-    ),
-  ): Entity<$$Schema>;
+      body: InferInitialEventBodyFromSchema<$$Schema>;
+    },
+  ) => T;
+
+  /**
+   * Loads an entity instance with the given state. (readonly)
+   */
+  load: <T extends Entity<$$Schema>>(
+    this: new (
+      args: EntityConstructorArgs<$$Schema>,
+    ) => T,
+    args: {
+      entityId: string;
+      state: InferStateFromSchema<$$Schema>;
+    },
+  ) => T;
+
+  /**
+   * @internal
+   */
+  " $$loadFromEvents": <T extends Entity<$$Schema>>(
+    this: new (
+      args: EntityConstructorArgs<$$Schema>,
+    ) => T,
+    args: {
+      entityId: string;
+      events: InferEventFromSchema<$$Schema>[];
+    },
+  ) => T;
+
+  /**
+   * @internal
+   */
+  new (args: EntityConstructorArgs<$$Schema>): Entity<$$Schema>;
 }
 
 /**

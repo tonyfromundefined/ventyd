@@ -1,7 +1,10 @@
 import * as v from "valibot";
 import type { Reducer } from "./defineReducer";
 import type { Entity as EntityType } from "./entity-types/Entity";
-import type { EntityConstructor } from "./entity-types/EntityConstructor";
+import type {
+  EntityConstructor,
+  EntityConstructorArgs,
+} from "./entity-types/EntityConstructor";
 import type {
   InferEntityNameFromSchema,
   InferEventBodyFromSchema,
@@ -36,10 +39,20 @@ import type { ValibotEmptyObject, ValibotEventObject } from "./util-types";
  * }
  *
  * // Create a new instance
- * const user = new User({
+ * const user = User.create({
  *   body: {
  *     email: "user@example.com",
  *     nickname: "JohnDoe"
+ *   }
+ * });
+ *
+ * // Load from existing state (read-only)
+ * const loadedUser = User.load({
+ *   entityId: "user-123",
+ *   state: {
+ *     email: "user@example.com",
+ *     nickname: "JohnDoe",
+ *     bio: "Engineer"
  *   }
  * });
  *
@@ -108,76 +121,127 @@ export function Entity<$$Schema>(
     " $$state": $$State = null as any;
     " $$queuedEvents": $$Event[] = [];
     " $$reducer": Reducer<$$Schema> = reducer;
+    " $$readonly": boolean = false;
 
     // ----------------------
     // constructor
     // ----------------------
     /**
-     * Creates a new entity instance or prepares an empty instance for hydration.
-     *
-     * @param args - Optional configuration for entity initialization
-     * @param args.entityId - Custom entity ID (auto-generated if not provided)
-     * @param args.body - Initial event payload for new entities
-     *
-     * @remarks
-     * When `body` is provided, the constructor automatically dispatches the
-     * initial event defined in the schema. This ensures new entities always
-     * start with a valid initial state.
-     *
-     * @example
-     * ```typescript
-     * // Create new entity with auto-generated ID
-     * const user1 = new User({
-     *   body: { email: "user@example.com", nickname: "John" }
-     * });
-     *
-     * // Create new entity with custom ID
-     * const user2 = new User({
-     *   entityId: "user-123",
-     *   body: { email: "user@example.com", nickname: "Jane" }
-     * });
-     *
-     * // Create empty entity for hydration (used internally by repository)
-     * const user3 = new User();
-     * ```
+     * @internal
      */
     constructor(
-      args?: {
-        entityId?: string;
-      } & (
+      args:
         | {
-            by?: undefined;
-            body?: undefined;
-            state?: undefined;
-          }
-        | {
-            by: "INITIAL_EVENT";
+            type: "create";
+            entityId?: string;
             body: InferInitialEventBodyFromSchema<$$Schema>;
           }
         | {
-            by: "STATE";
-            state: $$State;
+            type: "load";
+            entityId: string;
+            state: InferStateFromSchema<$$Schema>;
           }
-      ),
+        | {
+            type: "loadFromEvents";
+            entityId: string;
+            events: InferEventFromSchema<$$Schema>[];
+          },
     ) {
-      // 1. initialize entity id
-      this.entityId = args?.entityId ?? generateId();
+      switch (args.type) {
+        case "create": {
+          this.entityId = args.entityId ?? generateId();
+          type EventName = InferEventNameFromSchema<$$Schema>;
+          type EventBody = InferEventBodyFromSchema<$$Schema, EventName>;
 
-      // 2. initialize entity state
-      if (args?.by === "STATE") {
-        this[" $$state"] = args.state;
+          const eventName = `${entityName}:${initialEventName}` as EventName;
+          const body = v.parse(initialEventBodySchema, args.body) as EventBody;
+
+          this.dispatch(eventName, body);
+          break;
+        }
+
+        case "load": {
+          this.entityId = args.entityId;
+          this[" $$state"] = args.state;
+          this[" $$readonly"] = true;
+          break;
+        }
+
+        case "loadFromEvents": {
+          // 0. prepare
+          const reducer = this[" $$reducer"];
+          const prevState = this[" $$state"];
+          const EventArraySchema = v.array(eventSchema);
+
+          // 1. validate events
+          const events = v.parse(EventArraySchema, args.events) as $$Event[];
+
+          // 2. compute state
+          this.entityId = args.entityId;
+          this[" $$state"] = events.reduce(reducer, prevState);
+          break;
+        }
       }
+    }
 
-      // 3. dispatch initial event
-      if (args?.by === "INITIAL_EVENT") {
-        type EventName = InferEventNameFromSchema<$$Schema>;
-        type EventBody = InferEventBodyFromSchema<$$Schema, EventName>;
+    /**
+     * Creates a new entity instance with the given initial event body.
+     */
+    static create<T>(
+      this: new (
+        args: EntityConstructorArgs<$$Schema>,
+      ) => T,
+      args: {
+        entityId?: string;
+        body: InferInitialEventBodyFromSchema<$$Schema>;
+      },
+    ): T {
+      // biome-ignore lint/complexity/noThisInStatic: inheritance
+      return new this({
+        type: "create",
+        entityId: args.entityId,
+        body: args.body,
+      });
+    }
 
-        const eventName = `${entityName}:${initialEventName}` as EventName;
-        const body = v.parse(initialEventBodySchema, args.body) as EventBody;
+    /**
+     * Loads an entity instance with the given state. (readonly)
+     */
+    static load<T>(
+      this: new (
+        args: EntityConstructorArgs<$$Schema>,
+      ) => T,
+      args: {
+        entityId: string;
+        state: InferStateFromSchema<$$Schema>;
+      },
+    ): T {
+      // biome-ignore lint/complexity/noThisInStatic: inheritance
+      return new this({
+        type: "load",
+        entityId: args.entityId,
+        state: args.state,
+      });
+    }
 
-        this.dispatch(eventName, body);
-      }
+    /**
+     * @internal
+     */
+    static " $$loadFromEvents"<T>(
+      this: new (
+        args: EntityConstructorArgs<$$Schema>,
+      ) => T,
+      args: {
+        entityId: string;
+        events: InferEventFromSchema<$$Schema>[];
+      },
+    ): T {
+      // biome-ignore lint/complexity/noThisInStatic: inheritance
+      return new this({
+        type: "loadFromEvents",
+        entityId: args.entityId,
+        events: args.events,
+      });
     }
 
     // ----------------------
@@ -191,6 +255,12 @@ export function Entity<$$Schema>(
       const queuedEvents = this[" $$queuedEvents"];
       const reducer = this[" $$reducer"];
       const prevState = this[" $$state"];
+      const readonly = this[" $$readonly"];
+
+      // Check if entity is readonly (initialized with state)
+      if (readonly) {
+        throw new Error("Entity is readonly");
+      }
 
       // Check queue size limit
       if (queuedEvents.length >= maxQueuedEvents) {
@@ -222,24 +292,6 @@ export function Entity<$$Schema>(
     // ----------------------
     " $$flush"() {
       this[" $$queuedEvents"] = [];
-    }
-
-    " $$hydrate"(input: unknown[]) {
-      // 0. prepare
-      const reducer = this[" $$reducer"];
-      const prevState = this[" $$state"];
-      const EventArraySchema = v.array(eventSchema);
-
-      // 1. validate current state
-      if (this[" $$state"] !== null) {
-        throw new Error("Entity is already initialized");
-      }
-
-      // 2. validate events
-      const events = v.parse(EventArraySchema, input) as $$Event[];
-
-      // 3. compute state
-      this[" $$state"] = events.reduce(reducer, prevState);
     }
   };
 }

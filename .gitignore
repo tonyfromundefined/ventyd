@@ -18,3 +18,7 @@ node_modules
 
 # Build artifacts
 /dist
+/coverage
+
+# macOS
+.DS_Store
