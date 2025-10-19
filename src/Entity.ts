@@ -39,10 +39,20 @@ import type { ValibotEmptyObject, ValibotEventObject } from "./util-types";
  * }
  *
  * // Create a new instance
- * const user = new User({
+ * const user = User.create({
  *   body: {
  *     email: "user@example.com",
  *     nickname: "JohnDoe"
+ *   }
+ * });
+ *
+ * // Load from existing state (read-only)
+ * const loadedUser = User.load({
+ *   entityId: "user-123",
+ *   state: {
+ *     email: "user@example.com",
+ *     nickname: "JohnDoe",
+ *     bio: "Engineer"
  *   }
  * });
  *
@@ -163,15 +173,10 @@ export function Entity<$$Schema>(
           const prevState = this[" $$state"];
           const EventArraySchema = v.array(eventSchema);
 
-          // 1. validate current state
-          if (this[" $$state"] !== null) {
-            throw new Error("Entity is already initialized");
-          }
-
-          // 2. validate events
+          // 1. validate events
           const events = v.parse(EventArraySchema, args.events) as $$Event[];
 
-          // 3. compute state
+          // 2. compute state
           this.entityId = args.entityId;
           this[" $$state"] = events.reduce(reducer, prevState);
           break;

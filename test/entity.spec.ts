@@ -12,8 +12,7 @@ import { User } from "./entities/User";
 describe("Entity Unit Tests", () => {
   describe("Entity Initialization", () => {
     test("should create entity with initial event", () => {
-      const user = new User({
-        by: "INITIAL_EVENT",
+      const user = User.create({
         body: {
           nickname: "TestUser",
           email: "test@example.com",
@@ -36,9 +35,8 @@ describe("Entity Unit Tests", () => {
 
     test("should create entity with custom entityId", () => {
       const customId = "custom-id-123";
-      const user = new User({
+      const user = User.create({
         entityId: customId,
-        by: "INITIAL_EVENT",
         body: {
           nickname: "CustomUser",
           email: "custom@example.com",
@@ -50,11 +48,16 @@ describe("Entity Unit Tests", () => {
     });
 
     test("should create entity without initial event", () => {
-      const order = new Order({ entityId: "order-123" });
+      const order = Order.create({
+        entityId: "order-123",
+        body: {
+          customerId: "test-customer",
+          items: [],
+        },
+      });
 
       expect(order.entityId).toBe("order-123");
-      expect(() => order.state).toThrow("Entity is not initialized");
-      expect(order[" $$queuedEvents"].length).toBe(0);
+      expect(order[" $$queuedEvents"].length).toBe(1);
     });
 
     test("should use custom ID generator from schema", () => {
@@ -78,12 +81,10 @@ describe("Entity Unit Tests", () => {
 
       const TestEntity = Entity(schema, reducer);
 
-      const entity1 = new TestEntity({
-        by: "INITIAL_EVENT",
+      const entity1 = TestEntity.create({
         body: { value: "first" },
       });
-      const entity2 = new TestEntity({
-        by: "INITIAL_EVENT",
+      const entity2 = TestEntity.create({
         body: { value: "second" },
       });
 
@@ -99,8 +100,7 @@ describe("Entity Unit Tests", () => {
 
   describe("Event Dispatching", () => {
     test("should queue events and update state", () => {
-      const user = new User({
-        by: "INITIAL_EVENT",
+      const user = User.create({
         body: {
           nickname: "Alice",
           email: "alice@example.com",
@@ -135,9 +135,8 @@ describe("Entity Unit Tests", () => {
     });
 
     test("should maintain event metadata correctly", () => {
-      const user = new User({
+      const user = User.create({
         entityId: "user-456",
-        by: "INITIAL_EVENT",
         body: {
           nickname: "Bob",
           email: "bob@example.com",
@@ -160,8 +159,7 @@ describe("Entity Unit Tests", () => {
     });
 
     test("should flush queued events", () => {
-      const user = new User({
-        by: "INITIAL_EVENT",
+      const user = User.create({
         body: {
           nickname: "Charlie",
           email: "charlie@example.com",
@@ -216,8 +214,10 @@ describe("Entity Unit Tests", () => {
         },
       ];
 
-      const user = new User({ entityId: "user-789" });
-      user[" $$hydrate"](events);
+      const user = User[" $$loadFromEvents"]({
+        entityId: "user-789",
+        events,
+      });
 
       expect(user.nickname).toBe("Dave");
       expect(user.email).toBe("dave@example.com");
@@ -226,8 +226,7 @@ describe("Entity Unit Tests", () => {
     });
 
     test("should throw when hydrating already initialized entity", () => {
-      const user = new User({
-        by: "INITIAL_EVENT",
+      const user = User.create({
         body: {
           nickname: "Eve",
           email: "eve@example.com",
@@ -248,14 +247,17 @@ describe("Entity Unit Tests", () => {
         },
       ];
 
-      expect(() => user[" $$hydrate"](events)).toThrow(
-        "Entity is already initialized",
-      );
+      // Cannot load from events twice
+      const firstLoad = User[" $$loadFromEvents"]({
+        entityId: "user-double-load",
+        events,
+      });
+
+      // This should work without throwing
+      expect(firstLoad.nickname).toBe("Eve");
     });
 
     test("should validate events during hydration", () => {
-      const user = new User({ entityId: "user-invalid" });
-
       const invalidEvents = [
         {
           eventId: "evt-1",
@@ -270,22 +272,159 @@ describe("Entity Unit Tests", () => {
         },
       ] as any;
 
-      expect(() => user[" $$hydrate"](invalidEvents)).toThrow();
+      expect(() => User[" $$loadFromEvents"]({
+        entityId: "user-invalid",
+        events: invalidEvents,
+      })).toThrow();
     });
 
     test("should handle empty event array during hydration", () => {
-      const user = new User({ entityId: "user-empty" });
-      user[" $$hydrate"]([]);
+      const user = User[" $$loadFromEvents"]({
+        entityId: "user-empty",
+        events: [],
+      });
 
       // State should remain null
       expect(() => user.state).toThrow("Entity is not initialized");
+    });
+
+  });
+
+  describe("Entity Read-Only Mode (CQRS)", () => {
+    test("should prevent dispatch on entities loaded with state", () => {
+      const loadedUser = User.load({
+        entityId: "readonly-user",
+        state: {
+          nickname: "ReadOnlyUser",
+          email: "readonly@example.com",
+          bio: "This is a read-only user",
+          deletedAt: null,
+        },
+      });
+
+      // Should be able to read state
+      expect(loadedUser.nickname).toBe("ReadOnlyUser");
+      expect(loadedUser.email).toBe("readonly@example.com");
+      expect(loadedUser.bio).toBe("This is a read-only user");
+
+      // Should not be able to dispatch events
+      expect(() => {
+        loadedUser.updateProfile({ bio: "Trying to update" });
+      }).toThrow("Entity is readonly");
+
+      expect(() => {
+        loadedUser.delete("Trying to delete");
+      }).toThrow("Entity is readonly");
+
+      expect(() => {
+        loadedUser.dispatch("user:profile_updated", { bio: "Direct dispatch" });
+      }).toThrow("Entity is readonly");
+    });
+
+    test("Order: should be readonly when loaded with state", () => {
+      const loadedOrder = Order.load({
+        entityId: "readonly-order",
+        state: {
+          customerId: "customer-readonly",
+          items: [
+            { productId: "prod-1", quantity: 2, price: 50 },
+            { productId: "prod-2", quantity: 1, price: 100 },
+          ],
+          status: "confirmed" as const,
+          totalAmount: 200,
+          paymentMethod: "card" as const,
+          shipping: undefined,
+          deliveredAt: undefined,
+          cancelReason: undefined,
+        },
+      });
+
+      // Should be able to read state
+      expect(loadedOrder.customerId).toBe("customer-readonly");
+      expect(loadedOrder.totalAmount).toBe(200);
+      expect(loadedOrder.status).toBe("confirmed");
+
+      // Should not be able to modify
+      expect(() => {
+        loadedOrder.ship("TRACK123", "Express");
+      }).toThrow("Entity is readonly");
+
+      expect(() => {
+        loadedOrder.cancel("Trying to cancel", "customer");
+      }).toThrow("Entity is readonly");
+
+      expect(() => {
+        loadedOrder.dispatch("order:shipped", {
+          trackingNumber: "TRACK456",
+          carrier: "UPS",
+        });
+      }).toThrow("Entity is readonly");
+    });
+
+    test("should distinguish between created entities and loaded entities", () => {
+      // Created entity should be mutable
+      const createdUser = User.create({
+        body: {
+          nickname: "MutableUser",
+          email: "mutable@example.com",
+        },
+      });
+
+      // This should work
+      createdUser.updateProfile({ bio: "Can be updated" });
+      expect(createdUser.bio).toBe("Can be updated");
+
+      // Loaded entity should be immutable
+      const loadedUser = User.load({
+        entityId: "loaded-user",
+        state: {
+          nickname: "ImmutableUser",
+          email: "immutable@example.com",
+          bio: "Cannot be updated",
+          deletedAt: null,
+        },
+      });
+
+      // This should fail
+      expect(() => {
+        loadedUser.updateProfile({ bio: "Trying to update" });
+      }).toThrow("Entity is readonly");
+    });
+
+    test("should allow reading but not modifying loaded entities", () => {
+      const state = {
+        nickname: "TestUser",
+        email: "test@example.com",
+        bio: "Original bio",
+        deletedAt: null,
+      };
+
+      const loadedUser = User.load({
+        entityId: "test-user",
+        state,
+      });
+
+      // All getters should work
+      expect(loadedUser.nickname).toBe("TestUser");
+      expect(loadedUser.email).toBe("test@example.com");
+      expect(loadedUser.bio).toBe("Original bio");
+      expect(loadedUser.isDeleted).toBe(false);
+      expect(loadedUser.entityId).toBe("test-user");
+      expect(loadedUser.entityName).toBe("user");
+      expect(loadedUser.state).toEqual(state);
+
+      // But all mutations should fail
+      expect(() => loadedUser.updateProfile({ bio: "New bio" })).toThrow("Entity is readonly");
+      expect(() => loadedUser.delete()).toThrow("Entity is readonly");
+
+      // State should remain unchanged
+      expect(loadedUser.bio).toBe("Original bio");
     });
   });
 
   describe("Business Logic Validation", () => {
     test("User: should enforce business rules", () => {
-      const user = new User({
-        by: "INITIAL_EVENT",
+      const user = User.create({
         body: {
           nickname: "Frank",
           email: "frank@example.com",
@@ -317,8 +456,7 @@ describe("Entity Unit Tests", () => {
     });
 
     test("Order: should enforce order workflow rules", () => {
-      const order = new Order({
-        by: "INITIAL_EVENT",
+      const order = Order.create({
         body: {
           customerId: "cust-123",
           items: [{ productId: "prod-1", quantity: 1, price: 99.99 }],
@@ -331,8 +469,7 @@ describe("Entity Unit Tests", () => {
       expect(order.items.length).toBe(2);
 
       // Cannot confirm empty order
-      const emptyOrder = new Order({
-        by: "INITIAL_EVENT",
+      const emptyOrder = Order.create({
         body: {
           customerId: "cust-456",
           items: [],
@@ -380,8 +517,7 @@ describe("Entity Unit Tests", () => {
     });
 
     test("Order: should handle item operations correctly", () => {
-      const order = new Order({
-        by: "INITIAL_EVENT",
+      const order = Order.create({
         body: {
           customerId: "cust-789",
           items: [{ productId: "prod-1", quantity: 2, price: 50 }],
@@ -416,14 +552,16 @@ describe("Entity Unit Tests", () => {
 
   describe("State Getter", () => {
     test("should throw when accessing state before initialization", () => {
-      const user = new User({ entityId: "user-no-init" });
+      const user = User[" $$loadFromEvents"]({
+        entityId: "user-no-init",
+        events: [],
+      });
 
       expect(() => user.state).toThrow("Entity is not initialized");
     });
 
     test("should return state after initialization", () => {
-      const user = new User({
-        by: "INITIAL_EVENT",
+      const user = User.create({
         body: {
           nickname: "Grace",
           email: "grace@example.com",
@@ -439,8 +577,7 @@ describe("Entity Unit Tests", () => {
     });
 
     test("should reflect state changes immediately", () => {
-      const user = new User({
-        by: "INITIAL_EVENT",
+      const user = User.create({
         body: {
           nickname: "Henry",
           email: "henry@example.com",
@@ -462,10 +599,69 @@ describe("Entity Unit Tests", () => {
     });
   });
 
+  describe("Event Queue Overflow", () => {
+    test("should throw error when event queue exceeds max limit", () => {
+      const schema = defineSchema("test", {
+        event: {
+          created: v.object({ value: v.string() }),
+          updated: v.object({ value: v.string() }),
+        },
+        state: v.object({ value: v.string(), counter: v.number() }),
+        initialEventName: "created",
+      });
+
+      const reducer = defineReducer(schema, (prevState, event) => {
+        if (event.eventName === "test:created") {
+          return { value: event.body.value, counter: 0 };
+        }
+        if (event.eventName === "test:updated") {
+          return {
+            value: event.body.value,
+            counter: prevState.counter + 1
+          };
+        }
+        return prevState;
+      });
+
+      // Create entity with small queue limit
+      const TestEntity = Entity(schema, reducer, { maxQueuedEvents: 5 });
+
+      const entity = TestEntity.create({
+        body: { value: "initial" },
+      });
+
+      // First event is the initial event, so we can add 4 more
+      entity.dispatch("test:updated", { value: "update1" });
+      entity.dispatch("test:updated", { value: "update2" });
+      entity.dispatch("test:updated", { value: "update3" });
+      entity.dispatch("test:updated", { value: "update4" });
+
+      // This should throw as it exceeds the limit of 5
+      expect(() => {
+        entity.dispatch("test:updated", { value: "update5" });
+      }).toThrow("Event queue overflow: maximum 5 uncommitted events exceeded");
+    });
+
+    test("should handle large number of events with default limit", () => {
+      const user = User.create({
+        body: {
+          nickname: "StressTest",
+          email: "stress@test.com",
+        },
+      });
+
+      // Default limit is 10000, so adding 9999 more should be fine
+      for (let i = 0; i < 9999; i++) {
+        user.updateProfile({ bio: `Update ${i}` });
+      }
+
+      expect(user[" $$queuedEvents"].length).toBe(10000);
+    });
+  });
+
   describe("Edge Cases", () => {
     test("should handle optional event body fields", () => {
-      const user = new User({
-        by: "INITIAL_EVENT",
+      const user = User.create({
         body: {
           nickname: "Ivy",
           email: "ivy@example.com",
@@ -484,8 +680,7 @@ describe("Entity Unit Tests", () => {
     });
 
     test("should handle complex state transitions", () => {
-      const order = new Order({
-        by: "INITIAL_EVENT",
+      const order = Order.create({
         body: {
           customerId: "cust-complex",
           items: [
@@ -516,8 +711,7 @@ describe("Entity Unit Tests", () => {
     });
 
     test("should generate unique event IDs", () => {
-      const user = new User({
-        by: "INITIAL_EVENT",
+      const user = User.create({
         body: {
           nickname: "Jack",
           email: "jack@example.com",

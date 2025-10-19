@@ -178,7 +178,7 @@ const userRepository = createRepository(User, {
 
 ```typescript
 // Create a new user
-const user = new User({
+const user = User.create({
   body: {
     nickname: "JohnDoe",
     email: "john@example.com",
@@ -200,6 +200,16 @@ const retrievedUser = await userRepository.findOne({
 
 console.log(retrievedUser?.nickname); // "JohnDoe"
 console.log(retrievedUser?.bio); // "Software Engineer"
+
+// You can also load an entity from existing state (read-only)
+const loadedUser = User.load({
+  entityId: "user-123",
+  state: {
+    nickname: "ExistingUser",
+    email: "existing@example.com",
+    bio: "Loaded from database"
+  }
+});
 ```
 
 ## Core Concepts
