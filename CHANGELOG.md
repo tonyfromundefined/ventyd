@@ -1,5 +1,11 @@
 # ventyd
 
+## 1.4.1
+
+### Patch Changes
+
+- f1fd11d: feat: add `eventId`, `eventCreatedAt` option in `dispatch()`
+
 ## 1.4.0
 
 ### Minor Changes
