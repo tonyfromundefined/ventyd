@@ -189,6 +189,8 @@ export function Entity<$$Schema>(
         type: "create",
         entityId: args.entityId,
         body: args.body,
+        eventCreatedAt: args.eventCreatedAt,
+        eventId: args.eventId,
       });
     }
 
