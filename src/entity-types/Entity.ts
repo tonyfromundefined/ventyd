@@ -82,6 +82,10 @@ export interface Entity<$$Schema> {
   dispatch: <K extends InferEventNameFromSchema<$$Schema>>(
     eventName: K,
     body: InferEventBodyFromSchema<$$Schema, K>,
+    options?: {
+      eventId?: string;
+      eventCreatedAt?: string;
+    },
   ) => void;
 
   // ----------------------

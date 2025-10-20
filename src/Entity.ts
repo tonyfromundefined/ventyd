@@ -129,24 +129,7 @@ export function Entity<$$Schema>(
     /**
      * @internal
      */
-    constructor(
-      args:
-        | {
-            type: "create";
-            entityId?: string;
-            body: InferInitialEventBodyFromSchema<$$Schema>;
-          }
-        | {
-            type: "load";
-            entityId: string;
-            state: InferStateFromSchema<$$Schema>;
-          }
-        | {
-            type: "loadFromEvents";
-            entityId: string;
-            events: InferEventFromSchema<$$Schema>[];
-          },
-    ) {
+    constructor(args: EntityConstructorArgs<$$Schema>) {
       switch (args.type) {
         case "create": {
           this.entityId = args.entityId ?? generateId();
@@ -156,7 +139,10 @@ export function Entity<$$Schema>(
           const eventName = `${entityName}:${initialEventName}` as EventName;
           const body = v.parse(initialEventBodySchema, args.body) as EventBody;
 
-          this.dispatch(eventName, body);
+          this.dispatch(eventName, body, {
+            eventId: args.eventId,
+            eventCreatedAt: args.eventCreatedAt,
+          });
           break;
         }
 
@@ -192,8 +178,10 @@ export function Entity<$$Schema>(
         args: EntityConstructorArgs<$$Schema>,
       ) => T,
       args: {
-        entityId?: string;
         body: InferInitialEventBodyFromSchema<$$Schema>;
+        entityId?: string;
+        eventId?: string;
+        eventCreatedAt?: string;
       },
     ): T {
       // biome-ignore lint/complexity/noThisInStatic: inheritance
@@ -250,6 +238,10 @@ export function Entity<$$Schema>(
     dispatch<EventName extends InferEventNameFromSchema<$$Schema>>(
       eventName: EventName,
       body: InferEventBodyFromSchema<$$Schema, EventName>,
+      options?: {
+        eventId?: string;
+        eventCreatedAt?: string;
+      },
     ) {
       // 0. prepare
       const queuedEvents = this[" $$queuedEvents"];
@@ -272,9 +264,9 @@ export function Entity<$$Schema>(
 
       // 1. create event
       const event = v.parse(eventSchema, {
-        eventId: generateId(),
+        eventId: options?.eventId ?? generateId(),
+        eventCreatedAt: options?.eventCreatedAt ?? new Date().toISOString(),
         eventName,
-        eventCreatedAt: new Date().toISOString(),
         entityId: this.entityId,
         entityName: this.entityName,
         body,

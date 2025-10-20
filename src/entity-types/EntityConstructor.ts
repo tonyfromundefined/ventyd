@@ -8,8 +8,10 @@ import type { Entity } from "./Entity";
 export type EntityConstructorArgs<$$Schema> =
   | {
       type: "create";
-      entityId?: string;
       body: InferInitialEventBodyFromSchema<$$Schema>;
+      entityId?: string;
+      eventId?: string;
+      eventCreatedAt?: string;
     }
   | {
       type: "load";
@@ -41,8 +43,10 @@ export interface EntityConstructor<$$Schema> {
       args: EntityConstructorArgs<$$Schema>,
     ) => T,
     args: {
-      entityId?: string;
       body: InferInitialEventBodyFromSchema<$$Schema>;
+      entityId?: string;
+      eventId?: string;
+      eventCreatedAt?: string;
     },
   ) => T;
 
@@ -67,8 +71,8 @@ export interface EntityConstructor<$$Schema> {
       args: EntityConstructorArgs<$$Schema>,
     ) => T,
     args: {
-      entityId: string;
       events: InferEventFromSchema<$$Schema>[];
+      entityId: string;
     },
   ) => T;
 
