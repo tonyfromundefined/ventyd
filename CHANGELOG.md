@@ -1,5 +1,11 @@
 # ventyd
 
+## 1.5.0
+
+### Minor Changes
+
+- 9e0fa56: feat: add namespace separater option
+
 ## 1.4.2
 
 ### Patch Changes
