@@ -764,7 +764,7 @@ describe("Entity Unit Tests", () => {
           event.eventName === "product/created" ||
           event.eventName === "product/updated"
         ) {
-          return { name: (event as any).body.name };
+          return { name: event.body.name };
         }
         return prevState;
       });
@@ -780,7 +780,7 @@ describe("Entity Unit Tests", () => {
 
       // Dispatch another event - runtime uses custom separator
       // Type assertion needed because type system uses ":"
-      product.dispatch("product/updated" as any, { name: "Updated Product" });
+      product.dispatch("product/updated", { name: "Updated Product" });
       const updateEvent = product[" $$queuedEvents"][1];
       expect(updateEvent?.eventName).toBe("product/updated");
     });
@@ -828,9 +828,9 @@ describe("Entity Unit Tests", () => {
       });
 
       // Runtime uses custom separator, type assertions needed
-      order.dispatch("order.confirmed" as any, {});
-      order.dispatch("order.shipped" as any, { trackingNumber: "TRACK123" });
-      order.dispatch("order.delivered" as any, {});
+      order.dispatch("order.confirmed", {});
+      order.dispatch("order.shipped", { trackingNumber: "TRACK123" });
+      order.dispatch("order.delivered", {});
 
       const eventNames = order[" $$queuedEvents"].map((e) => e?.eventName);
       expect(eventNames).toEqual([
