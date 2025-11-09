@@ -186,7 +186,7 @@ import type {
  * @since 2.0.0
  */
 export type Adapter<
-  $$Schema = Schema<string, EventDefinitionInput, StateDefinitionInput, string>,
+  $$Schema = Schema<string, EventDefinitionInput, StateDefinitionInput, string, ":">,
 > = {
   /**
    * Retrieves all events for a specific entity.

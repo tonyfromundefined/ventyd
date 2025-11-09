@@ -90,6 +90,7 @@ export function Entity<$$Schema>(
   const eventSchema: ValibotEventObject<string, ValibotEmptyObject> =
     _schema.event;
   const generateId: () => string = _schema[" $$generateId"];
+  const namespaceSeparator: string = _schema[" $$namespaceSeparator"];
 
   // options
   const maxQueuedEvents = options?.maxQueuedEvents ?? 10000; // Default to 10000 events
@@ -136,7 +137,7 @@ export function Entity<$$Schema>(
           type EventName = InferEventNameFromSchema<$$Schema>;
           type EventBody = InferEventBodyFromSchema<$$Schema, EventName>;
 
-          const eventName = `${entityName}:${initialEventName}` as EventName;
+          const eventName = `${entityName}${namespaceSeparator}${initialEventName}` as EventName;
           const body = v.parse(initialEventBodySchema, args.body) as EventBody;
 
           this.dispatch(eventName, body, {

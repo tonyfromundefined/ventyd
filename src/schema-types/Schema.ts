@@ -14,8 +14,9 @@ export type Schema<
   EventDefinition extends EventDefinitionInput,
   StateDefinition extends StateDefinitionInput,
   InitialEventName extends Extract<keyof EventDefinition, string>,
+  NamespaceSeparator extends string,
 > = {
-  event: EventSchema<EntityName, EventDefinition>;
+  event: EventSchema<EntityName, EventDefinition, NamespaceSeparator>;
   state: StateSchema<StateDefinition>;
   " $$entityName": EntityName;
   " $$eventDefinition": EventDefinition;
@@ -23,6 +24,7 @@ export type Schema<
   " $$initialEventName": InitialEventName;
   " $$initialEventBodySchema": EventDefinition[InitialEventName];
   " $$generateId": () => string;
+  " $$namespaceSeparator": NamespaceSeparator;
 };
 
 /**
