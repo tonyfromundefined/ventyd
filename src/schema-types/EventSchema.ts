@@ -6,11 +6,12 @@ import type { SingleEventSchema } from "./SingleEventSchema";
 export type EventSchema<
   EntityName extends string,
   EventDefinition extends EventDefinitionInput,
+  NamespaceSeparator extends string,
 > = v.VariantSchema<
   "eventName",
   ValueOf<{
     [key in keyof EventDefinition]: SingleEventSchema<
-      `${EntityName}:${Extract<key, string>}`,
+      `${EntityName}${NamespaceSeparator}${Extract<key, string>}`,
       EventDefinition[key]
     >;
   }>[],

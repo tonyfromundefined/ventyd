@@ -721,4 +721,124 @@ describe("Entity Unit Tests", () => {
       });
     });
   });
+
+  describe("Custom Namespace Separator", () => {
+    test("should use default separator (:) when not specified", () => {
+      const schema = defineSchema("product", {
+        event: {
+          created: v.object({ name: v.string() }),
+        },
+        state: v.object({ name: v.string() }),
+        initialEventName: "created",
+      });
+
+      const reducer = defineReducer(schema, (_, event) => {
+        if (event.eventName === "product:created") {
+          return { name: event.body.name };
+        }
+        return { name: "" };
+      });
+
+      const ProductEntity = Entity(schema, reducer);
+      const product = ProductEntity.create({
+        body: { name: "Test Product" },
+      });
+
+      const event = product[" $$queuedEvents"][0];
+      expect(event?.eventName).toBe("product:created");
+    });
+
+    test("should use custom separator when specified", () => {
+      const schema = defineSchema("product", {
+        event: {
+          created: v.object({ name: v.string() }),
+          updated: v.object({ name: v.string() }),
+        },
+        state: v.object({ name: v.string() }),
+        initialEventName: "created",
+        namespaceSeparator: "/",
+      });
+
+      const reducer = defineReducer(schema, (prevState, event) => {
+        if (
+          event.eventName === "product/created" ||
+          event.eventName === "product/updated"
+        ) {
+          return { name: event.body.name };
+        }
+        return prevState;
+      });
+
+      const ProductEntity = Entity(schema, reducer);
+      const product = ProductEntity.create({
+        body: { name: "Test Product" },
+      });
+
+      // Check initial event - runtime uses custom separator
+      const createEvent = product[" $$queuedEvents"][0];
+      expect(createEvent?.eventName).toBe("product/created");
+
+      // Dispatch another event - runtime uses custom separator
+      // Type assertion needed because type system uses ":"
+      product.dispatch("product/updated", { name: "Updated Product" });
+      const updateEvent = product[" $$queuedEvents"][1];
+      expect(updateEvent?.eventName).toBe("product/updated");
+    });
+
+    test("should use separator consistently across all events", () => {
+      const schema = defineSchema("order", {
+        event: {
+          created: v.object({ total: v.number() }),
+          confirmed: v.object({}),
+          shipped: v.object({ trackingNumber: v.string() }),
+          delivered: v.object({}),
+        },
+        state: v.object({
+          total: v.number(),
+          status: v.string(),
+          trackingNumber: v.optional(v.string()),
+        }),
+        initialEventName: "created",
+        namespaceSeparator: ".",
+      });
+
+      const reducer = defineReducer(schema, (prevState, event) => {
+        if (event.eventName === "order.created") {
+          return { total: event.body.total, status: "created" };
+        }
+        if (event.eventName === "order.confirmed") {
+          return { ...prevState, status: "confirmed" };
+        }
+        if (event.eventName === "order.shipped") {
+          return {
+            ...prevState,
+            status: "shipped",
+            trackingNumber: event.body.trackingNumber,
+          };
+        }
+        if (event.eventName === "order.delivered") {
+          return { ...prevState, status: "delivered" };
+        }
+        return prevState;
+      });
+
+      const OrderEntity = Entity(schema, reducer);
+      const order = OrderEntity.create({
+        body: { total: 100 },
+      });
+
+      // Runtime uses custom separator, type assertions needed
+      order.dispatch("order.confirmed", {});
+      order.dispatch("order.shipped", { trackingNumber: "TRACK123" });
+      order.dispatch("order.delivered", {});
+
+      const eventNames = order[" $$queuedEvents"].map((e) => e?.eventName);
+      expect(eventNames).toEqual([
+        "order.created",
+        "order.confirmed",
+        "order.shipped",
+        "order.delivered",
+      ]);
+    });
+  });
 });

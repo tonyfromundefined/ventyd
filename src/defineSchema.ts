@@ -18,6 +18,7 @@ const defaultGenerateId = () => crypto.randomUUID();
  * @param options.initialEventName - The event name that creates new entities
  * @param options.state - Valibot schema defining the shape of entity state
  * @param options.generateId - Optional custom ID generator function
+ * @param options.namespaceSeparator - Optional custom separator between entity name and event name (default: ":")
  *
  * @returns A fully-typed schema object for use with Entity and Repository
  *
@@ -92,7 +93,11 @@ const defaultGenerateId = () => crypto.randomUUID();
  *   }),
  *
  *   // Optional: Custom ID generator
- *   generateId: () => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+ *   generateId: () => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+ *
+ *   // Optional: Custom namespace separator (default is ":")
+ *   // This will make event names like "user.created" instead of "user:created"
+ *   namespaceSeparator: "."
  * });
  * ```
  *
@@ -103,6 +108,7 @@ export function defineSchema<
   $$EventDefinition extends EventDefinitionInput,
   $$StateDefinition extends StateDefinitionInput,
   $$InitialEventName extends Extract<keyof $$EventDefinition, string>,
+  $$NamespaceSeparator extends string = ":",
 >(
   entityName: $$EntityName,
   options: {
@@ -110,16 +116,18 @@ export function defineSchema<
     state: $$StateDefinition;
     initialEventName: $$InitialEventName;
     generateId?: () => string;
+    namespaceSeparator?: $$NamespaceSeparator;
   },
 ): Schema<
   $$EntityName,
   $$EventDefinition,
   $$StateDefinition,
-  $$InitialEventName
+  $$InitialEventName,
+  $$NamespaceSeparator
 > {
   type $$SingleEventSchemaMap = {
     [eventName in keyof $$EventDefinition]: SingleEventSchema<
-      `${$$EntityName}:${Extract<eventName, string>}`,
+      `${$$EntityName}${$$NamespaceSeparator}${Extract<eventName, string>}`,
       $$EventDefinition[eventName]
     >;
   };
@@ -127,6 +135,10 @@ export function defineSchema<
     ValueOf<$$SingleEventSchemaMap>,
     ...ValueOf<$$SingleEventSchemaMap>[],
   ];
+
+  const namespaceSeparator =
+    options.namespaceSeparator ?? (":" as $$NamespaceSeparator);
+  const generateId = options.generateId ?? defaultGenerateId;
 
   const baseEventSchema = v.object({
     eventId: v.string(),
@@ -138,7 +150,7 @@ export function defineSchema<
   const eventSchemas = Object.entries(options.event).map(([eventName, body]) =>
     v.object({
       ...baseEventSchema.entries,
-      eventName: v.literal(`${entityName}:${eventName}`),
+      eventName: v.literal(`${entityName}${namespaceSeparator}${eventName}`),
       body,
     }),
   ) as $$SingleEventSchemaTuple;
@@ -151,6 +163,7 @@ export function defineSchema<
     " $$stateDefinition": options.state,
     " $$initialEventName": options.initialEventName,
     " $$initialEventBodySchema": options.event[options.initialEventName],
-    " $$generateId": options.generateId ?? defaultGenerateId,
+    " $$generateId": generateId,
+    " $$namespaceSeparator": namespaceSeparator,
   };
 }
