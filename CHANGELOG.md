@@ -1,5 +1,11 @@
 # ventyd
 
+## 1.6.0
+
+### Minor Changes
+
+- b70cefb: feat: add plugin support
+
 ## 1.5.0
 
 ### Minor Changes
