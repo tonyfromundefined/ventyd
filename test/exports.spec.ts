@@ -13,32 +13,20 @@ describe("Package Exports", () => {
     expect(mainExports.defineReducer).toBeDefined();
     expect(mainExports.defineSchema).toBeDefined();
 
-    // Adapter type is type-only export, no runtime check
-
-    // Valibot re-export
-    expect(mainExports.v).toBeDefined();
-    expect(mainExports.v.object).toBeDefined();
-    expect(mainExports.v.string).toBeDefined();
+    // Storage Adapter type is type-only export, no runtime check
+    // Schema providers (valibot, etc.) are exported separately
   });
 
-  test("should export entity types", async () => {
-    const entityTypes = await import("../src/entity-types/index");
-
-    expect(entityTypes).toBeDefined();
-    // The types themselves are compile-time only, but the module should load
+  test("should export valibot schema provider separately", async () => {
+    const valibot = await import("../src/valibot");
+    expect(valibot.valibot).toBeDefined();
+    expect(valibot.v).toBeDefined();
   });
 
-  test("should export schema types", async () => {
-    const schemaTypes = await import("../src/schema-types/index");
+  test("should export types", async () => {
+    const types = await import("../src/types/index");
 
-    expect(schemaTypes).toBeDefined();
-    // The types themselves are compile-time only, but the module should load
-  });
-
-  test("should export util types", async () => {
-    const utilTypes = await import("../src/util-types/index");
-
-    expect(utilTypes).toBeDefined();
+    expect(types).toBeDefined();
     // The types themselves are compile-time only, but the module should load
   });
 
@@ -46,18 +34,18 @@ describe("Package Exports", () => {
     // This test verifies that type imports work correctly
     // The actual types are checked at compile time
     type TestImports = {
-      // From entity-types
-      EntityConstructor: import("../src/entity-types").EntityConstructor<any>;
-      EntityConstructorArgs: import("../src/entity-types").EntityConstructorArgs<any>;
+      // Entity types
+      EntityConstructor: import("../src/types").EntityConstructor<any>;
+      EntityConstructorArgs: import("../src/types").EntityConstructorArgs<any>;
 
-      // From schema-types
-      InferEntityNameFromSchema: import("../src/schema-types").InferEntityNameFromSchema<any>;
-      InferStateFromSchema: import("../src/schema-types").InferStateFromSchema<any>;
-      InferEventFromSchema: import("../src/schema-types").InferEventFromSchema<any>;
+      // Schema types
+      InferEntityNameFromSchema: import("../src/types").InferEntityNameFromSchema<any>;
+      InferStateFromSchema: import("../src/types").InferStateFromSchema<any>;
+      InferEventFromSchema: import("../src/types").InferEventFromSchema<any>;
 
-      // From util-types
-      ValueOf: import("../src/util-types").ValueOf<any>;
-      ConstructorReturnType: import("../src/util-types").ConstructorReturnType<any>;
+      // Util types
+      ValueOf: import("../src/types").ValueOf<any>;
+      ConstructorReturnType: import("../src/types").ConstructorReturnType<any>;
     };
 
     // If this compiles, the type exports are working

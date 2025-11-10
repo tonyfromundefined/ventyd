@@ -1,3 +1,4 @@
+import type { BaseEventType } from "./BaseEventType";
 import type { SchemaInput } from "./SchemaInput";
 
 /**
@@ -6,7 +7,7 @@ import type { SchemaInput } from "./SchemaInput";
  */
 export type Schema<
   EntityName,
-  EventType extends { eventName: string },
+  EventType extends BaseEventType,
   StateType,
   InitialEventName extends EventType["eventName"],
   NamespaceSeparator extends string,
@@ -99,3 +100,9 @@ export type InferEntityNameFromSchema<T> = T extends {
 }
   ? EntityName
   : never;
+
+/**
+ * Default schema type
+ * @internal
+ */
+export type DefaultSchema = Schema<string, BaseEventType, {}, string, ":">;

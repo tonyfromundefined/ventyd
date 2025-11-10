@@ -1,8 +1,8 @@
 import type {
+  DefaultSchema,
   InferEntityNameFromSchema,
   InferEventFromSchema,
   InferStateFromSchema,
-  Schema,
 } from "./Schema";
 
 /**
@@ -258,9 +258,7 @@ import type {
  *
  * @since 2.0.0
  */
-export type Plugin<
-  $$Schema = Schema<string, { eventName: string }, {}, string, ":">,
-> = {
+export type Plugin<$$Schema = DefaultSchema> = {
   /**
    * Hook called after events are successfully committed to storage.
    *

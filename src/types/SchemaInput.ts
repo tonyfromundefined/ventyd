@@ -1,6 +1,8 @@
+import type { BaseEventType } from "./BaseEventType";
+
 export type SchemaInput<
   $$EntityName,
-  $$EventType extends { eventName?: string },
+  $$EventType extends BaseEventType,
   $$StateType,
   $$NamespaceSeparator extends string = ":",
 > = (context: {

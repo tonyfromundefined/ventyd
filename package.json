@@ -34,8 +34,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "just-sort-by": "^3.2.0",
-    "valibot": "^1.1.0"
+    "just-sort-by": "^3.2.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
@@ -48,7 +47,16 @@
     "mongodb": "^6.20.0",
     "mongodb-memory-server": "^10.2.1",
     "typescript": "^5.9.2",
+    "valibot": "^1.1.0",
     "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "valibot": "^0.42.0 || ^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "valibot": {
+      "optional": true
+    }
   },
   "publishConfig": {
     "access": "public",

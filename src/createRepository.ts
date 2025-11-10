@@ -10,6 +10,7 @@ import type {
   Repository,
   Schema,
 } from "./types";
+import type { BaseEventType } from "./types/BaseEventType";
 
 /**
  * Creates a repository instance for managing entity persistence.
@@ -141,7 +142,7 @@ export function createRepository<
 
   const _schema = Entity.schema as Schema<
     string,
-    { eventName: string },
+    BaseEventType,
     {},
     string,
     string

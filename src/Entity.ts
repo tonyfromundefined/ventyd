@@ -12,6 +12,7 @@ import type {
   Reducer,
   Schema,
 } from "./types";
+import type { BaseEventType } from "./types/BaseEventType";
 
 /**
  * Creates an Entity class with event sourcing capabilities.
@@ -65,7 +66,7 @@ import type {
  * @since 1.0.0
  */
 export function Entity<
-  $$Schema extends Schema<string, { eventName: string }, {}, string, string>,
+  $$Schema extends Schema<string, BaseEventType, {}, string, string>,
 >(
   schema: $$Schema,
   reducer: Reducer<$$Schema>,
