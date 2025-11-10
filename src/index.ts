@@ -9,6 +9,7 @@ export type {
   EntityConstructorArgs,
   InferSchemaFromEntityConstructor,
 } from "./entity-types";
+export type { Plugin } from "./Plugin";
 export type {
   InferEntityNameFromSchema,
   InferEventBodyFromSchema,

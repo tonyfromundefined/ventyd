@@ -283,6 +283,8 @@ getAllAdapterFactories().forEach((factory) => {
         };
 
         await adapter.commitEvents({
+          entityName: "order",
+          entityId: "order-reconstruct",
           events: events as any,
           state: state as any,
         });
@@ -338,6 +340,8 @@ getAllAdapterFactories().forEach((factory) => {
         };
 
         await adapter.commitEvents({
+          entityName: "user",
+          entityId: "legacy-user",
           events: oldEvents as any,
           state: state as any,
         });

@@ -137,7 +137,8 @@ export function Entity<$$Schema>(
           type EventName = InferEventNameFromSchema<$$Schema>;
           type EventBody = InferEventBodyFromSchema<$$Schema, EventName>;
 
-          const eventName = `${entityName}${namespaceSeparator}${initialEventName}` as EventName;
+          const eventName =
+            `${entityName}${namespaceSeparator}${initialEventName}` as EventName;
           const body = v.parse(initialEventBodySchema, args.body) as EventBody;
 
           this.dispatch(eventName, body, {

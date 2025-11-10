@@ -28,6 +28,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "just-sort-by": "^3.2.0",
     "valibot": "^1.1.0"
   },
   "devDependencies": {

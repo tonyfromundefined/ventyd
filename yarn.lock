@@ -2600,6 +2600,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"just-sort-by@npm:^3.2.0":
+  version: 3.2.0
+  resolution: "just-sort-by@npm:3.2.0"
+  checksum: 10c0/40aaabfbb13dca82ef039e7785413b37d0c641a2e9df3cd7198356385392fc7dcea51cb83c63fa8a00d4db024459c520285e26b0db43858cff8086110b8a5c6f
+  languageName: node
+  linkType: hard
+
 "locate-path@npm:^5.0.0":
   version: 5.0.0
   resolution: "locate-path@npm:5.0.0"
@@ -4072,6 +4079,7 @@ __metadata:
     "@vitest/coverage-v8": "npm:3.2.4"
     better-sqlite3: "npm:^12.4.1"
     bunchee: "npm:^6.6.0"
+    just-sort-by: "npm:^3.2.0"
     mongodb: "npm:^6.20.0"
     mongodb-memory-server: "npm:^10.2.1"
     typescript: "npm:^5.9.2"

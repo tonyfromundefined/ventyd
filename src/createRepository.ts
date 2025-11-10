@@ -1,3 +1,4 @@
+import sortBy from "just-sort-by";
 import * as v from "valibot";
 import type { Adapter } from "./Adapter";
 import type {
@@ -5,6 +6,7 @@ import type {
   EntityConstructor,
   InferSchemaFromEntityConstructor,
 } from "./entity-types";
+import type { Plugin } from "./Plugin";
 import type {
   InferEntityNameFromSchema,
   InferEventFromSchema,
@@ -81,9 +83,11 @@ export type Repository<$$Entity> = {
 /**
  * Creates a repository instance for managing entity persistence.
  *
- * @param entity - The entity class created with `class MyEntity extends Entity()`
+ * @param Entity - The entity class created with `class MyEntity extends Entity()`
  * @param args - Repository configuration
  * @param args.adapter - The adapter implementation for persistence
+ * @param args.plugins - Optional array of plugins to extend repository behavior
+ * @param args.onPluginError - Optional callback to handle plugin execution errors
  *
  * @returns A repository instance with type-safe operations
  *
@@ -93,11 +97,20 @@ export type Repository<$$Entity> = {
  * maintain the integrity of the event sourcing pattern.
  *
  * ```
- * Entity → dispatch() → queuedEvents → commit() → Adapter
+ * Entity → dispatch() → queuedEvents → commit() → Adapter → Plugins
  * ```
  *
+ * ## Plugin Execution
+ *
+ * Plugins run after events are committed to storage:
+ * - All plugins execute in parallel using Promise.allSettled
+ * - Plugin failures don't affect the commit operation (events are already saved)
+ * - Plugin failures don't prevent other plugins from running
+ * - Use `onPluginError` to handle plugin failures
  *
  * @example
+ * ### Basic Usage
+ *
  * ```typescript
  * import { createRepository, Entity, defineSchema, defineReducer } from 'ventyd';
  * import type { Adapter } from 'ventyd';
@@ -128,6 +141,52 @@ export type Repository<$$Entity> = {
  * const user = await userRepository.findOne({ entityId: 'user-123' });
  * ```
  *
+ * @example
+ * ### Using Plugins
+ *
+ * ```typescript
+ * import type { Plugin } from 'ventyd';
+ *
+ * const analyticsPlugin: Plugin = {
+ *   async onCommitted({ events }) {
+ *     await analytics.track(events);
+ *   }
+ * };
+ *
+ * const auditPlugin: Plugin = {
+ *   async onCommitted({ entityName, entityId, state }) {
+ *     await auditLog.record({ entityName, entityId, state });
+ *   }
+ * };
+ *
+ * const userRepository = createRepository(User, {
+ *   adapter,
+ *   plugins: [analyticsPlugin, auditPlugin]
+ * });
+ * ```
+ *
+ * @example
+ * ### Handling Plugin Errors
+ *
+ * ```typescript
+ * const userRepository = createRepository(User, {
+ *   adapter,
+ *   plugins: [analyticsPlugin, notificationPlugin],
+ *   onPluginError: (error, plugin) => {
+ *     // Log error
+ *     logger.error('Plugin execution failed', {
+ *       error: error instanceof Error ? error.message : String(error),
+ *       pluginName: plugin.constructor.name
+ *     });
+ *
+ *     // Send to error tracking service
+ *     sentry.captureException(error, {
+ *       tags: { component: 'plugin' }
+ *     });
+ *   }
+ * });
+ * ```
+ *
  * @since 1.0.0
  */
 export function createRepository<
@@ -135,9 +194,14 @@ export function createRepository<
     InferSchemaFromEntityConstructor<$$EntityConstructor>
   >,
 >(
-  entity: $$EntityConstructor,
+  Entity: $$EntityConstructor,
   args: {
     adapter: Adapter<InferSchemaFromEntityConstructor<$$EntityConstructor>>;
+    plugins?: Plugin<InferSchemaFromEntityConstructor<$$EntityConstructor>>[];
+    onPluginError?: (
+      error: unknown,
+      plugin: Plugin<InferSchemaFromEntityConstructor<$$EntityConstructor>>,
+    ) => void;
   },
 ): Repository<ConstructorReturnType<$$EntityConstructor>> {
   type $$Schema = InferSchemaFromEntityConstructor<$$EntityConstructor>;
@@ -146,31 +210,32 @@ export function createRepository<
   type $$ExtendedEntityType = ConstructorReturnType<$$EntityConstructor>;
 
   // biome-ignore lint/suspicious/noExplicitAny: entity is valid
-  const _schema: any = entity.schema;
+  const _schema: any = Entity.schema;
 
   const entityName: $$EntityName = _schema[" $$entityName"];
   const eventSchema: ValibotEmptyObject = _schema.event;
-
-  const MyEntity = entity;
 
   return {
     async findOne({ entityId }) {
       // 1. query events by entity ID
       const rawEvents = await args.adapter.getEventsByEntityId({
-        entityName: entityName,
-        entityId: entityId,
+        entityName,
+        entityId,
       });
 
-      // 2. validate events from adapter using the schema
+      // 2. validate and sort events from adapter using the schema
       const EventArraySchema = v.array(eventSchema);
-      const events = v.parse(EventArraySchema, rawEvents) as $$Event[];
+      const events = sortBy(
+        v.parse(EventArraySchema, rawEvents) as $$Event[],
+        "eventCreatedAt",
+      );
 
       if (events.length === 0) {
         return null;
       }
 
       // 3. load entity from events
-      const entity = MyEntity[" $$loadFromEvents"]({ entityId, events });
+      const entity = Entity[" $$loadFromEvents"]({ entityId, events });
 
       return entity as $$ExtendedEntityType;
     },
@@ -183,12 +248,42 @@ export function createRepository<
 
       // 2. commit events to adapter
       await args.adapter.commitEvents({
+        entityName,
+        entityId: _entity.entityId,
         events: queuedEvents,
         state: _entity.state,
       });
 
       // 3. flush queued events
       _entity[" $$flush"]();
+
+      // 4. run plugins in parallel (only if there are events)
+      if (args.plugins && args.plugins.length > 0 && queuedEvents.length > 0) {
+        const pluginResults = await Promise.allSettled(
+          args.plugins.map((plugin) =>
+            // Wrap in async function to catch both sync and async errors
+            (async () => {
+              return await plugin.onCommitted?.({
+                entityName,
+                entityId: _entity.entityId,
+                events: queuedEvents,
+                state: _entity.state,
+              });
+            })(),
+          ),
+        );
+
+        // Handle plugin errors if callback is provided
+        if (args.onPluginError) {
+          pluginResults.forEach((pluginResult, i) => {
+            const plugin = args.plugins?.[i];
+
+            if (pluginResult.status === "rejected" && plugin) {
+              args.onPluginError?.(pluginResult.reason, plugin);
+            }
+          });
+        }
+      }
     },
   };
 }
