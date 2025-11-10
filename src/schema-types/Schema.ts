@@ -1,28 +1,20 @@
-import type * as v from "valibot";
-import type { ValibotEmptyObject, ValibotEventObject } from "../util-types";
-import type { EventDefinitionInput } from "./EventDefinitionInput";
-import type { EventSchema } from "./EventSchema";
-import type { StateDefinitionInput } from "./StateDefinitionInput";
-import type { StateSchema } from "./StateSchema";
+import type { SchemaInput } from "./SchemaInput";
 
 /**
  * Type definition for a complete entity schema.
  * @internal
  */
 export type Schema<
-  EntityName extends string,
-  EventDefinition extends EventDefinitionInput,
-  StateDefinition extends StateDefinitionInput,
-  InitialEventName extends Extract<keyof EventDefinition, string>,
+  EntityName,
+  EventType extends { eventName: string },
+  StateType,
+  InitialEventName extends EventType["eventName"],
   NamespaceSeparator extends string,
-> = {
-  event: EventSchema<EntityName, EventDefinition, NamespaceSeparator>;
-  state: StateSchema<StateDefinition>;
+> = ReturnType<
+  SchemaInput<EntityName, EventType, StateType, NamespaceSeparator>
+> & {
   " $$entityName": EntityName;
-  " $$eventDefinition": EventDefinition;
-  " $$stateDefinition": StateDefinition;
   " $$initialEventName": InitialEventName;
-  " $$initialEventBodySchema": EventDefinition[InitialEventName];
   " $$generateId": () => string;
   " $$namespaceSeparator": NamespaceSeparator;
 };
@@ -32,9 +24,9 @@ export type Schema<
  * @internal
  */
 export type InferStateFromSchema<T> = T extends {
-  state: ValibotEmptyObject;
+  parseState: (input: unknown) => infer State;
 }
-  ? v.InferOutput<T["state"]>
+  ? State
   : never;
 
 /**
@@ -42,13 +34,9 @@ export type InferStateFromSchema<T> = T extends {
  * @internal
  */
 export type InferEventFromSchema<T> = T extends {
-  event: v.VariantSchema<
-    "eventName",
-    ValibotEventObject<string, ValibotEmptyObject>[],
-    undefined
-  >;
+  parseEvent: (input: unknown) => infer Event;
 }
-  ? v.InferOutput<T["event"]>
+  ? Event
   : never;
 
 /**
@@ -56,30 +44,23 @@ export type InferEventFromSchema<T> = T extends {
  * @internal
  */
 export type InferEventNameFromSchema<T> = T extends {
-  event: v.VariantSchema<
-    "eventName",
-    ValibotEventObject<string, ValibotEmptyObject>[],
-    undefined
-  >;
+  parseEvent: (input: unknown) => infer Event;
 }
-  ? v.InferOutput<T["event"]>["eventName"]
+  ? Event extends { eventName: infer EventName }
+    ? EventName
+    : string
   : string;
 
 /**
  * Infer the event body from a schema.
  * @internal
  */
-export type InferEventBodyFromSchema<
-  T,
-  EventName extends InferEventNameFromSchema<T>,
-> = T extends {
-  event: v.VariantSchema<
-    "eventName",
-    ValibotEventObject<string, ValibotEmptyObject>[],
-    undefined
-  >;
+export type InferEventBodyFromSchema<T, K> = T extends {
+  parseEvent: (input: unknown) => infer Event;
 }
-  ? Extract<v.InferOutput<T["event"]>, { eventName: EventName }>["body"]
+  ? Event extends { eventName: K; body: infer Body }
+    ? Body
+    : never
   : never;
 
 /**
@@ -87,27 +68,34 @@ export type InferEventBodyFromSchema<
  * @internal
  */
 export type InferInitialEventNameFromSchema<T> = T extends {
-  " $$initialEventName": string;
+  " $$initialEventName": infer InitialEventName;
 }
-  ? T[" $$initialEventName"]
+  ? InitialEventName
+  : never;
+
+/**
+ * Infer the initial event from a schema.
+ * @internal
+ */
+export type InferInitialEventFromSchema<T> = T extends {
+  parseEvent: (input: unknown) => infer Event;
+}
+  ? Extract<Event, { eventName: InferInitialEventNameFromSchema<T> }>
   : never;
 
 /**
  * Infer the initial event body from a schema.
  * @internal
  */
-export type InferInitialEventBodyFromSchema<T> = T extends {
-  " $$initialEventBodySchema": ValibotEmptyObject;
-}
-  ? v.InferOutput<T[" $$initialEventBodySchema"]>
-  : never;
+export type InferInitialEventBodyFromSchema<T> =
+  InferInitialEventFromSchema<T> extends { body: infer Body } ? Body : never;
 
 /**
  * Infer the entity name from a schema.
  * @internal
  */
 export type InferEntityNameFromSchema<T> = T extends {
-  " $$entityName": string;
+  " $$entityName": infer EntityName;
 }
-  ? T[" $$entityName"]
+  ? EntityName
   : never;

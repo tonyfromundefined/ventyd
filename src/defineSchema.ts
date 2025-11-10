@@ -1,11 +1,4 @@
-import * as v from "valibot";
-import type {
-  EventDefinitionInput,
-  Schema,
-  SingleEventSchema,
-  StateDefinitionInput,
-} from "./schema-types";
-import type { ValueOf } from "./util-types";
+import type { Schema, SchemaInput } from "./schema-types";
 
 const defaultGenerateId = () => crypto.randomUUID();
 
@@ -105,64 +98,45 @@ const defaultGenerateId = () => crypto.randomUUID();
  */
 export function defineSchema<
   $$EntityName extends string,
-  $$EventDefinition extends EventDefinitionInput,
-  $$StateDefinition extends StateDefinitionInput,
-  $$InitialEventName extends Extract<keyof $$EventDefinition, string>,
+  $$EventType extends { eventName: string },
+  $$StateType,
+  $$InitialEventName extends $$EventType["eventName"],
   $$NamespaceSeparator extends string = ":",
 >(
   entityName: $$EntityName,
   options: {
-    event: $$EventDefinition;
-    state: $$StateDefinition;
+    definition: SchemaInput<
+      $$EntityName,
+      $$EventType,
+      $$StateType,
+      $$NamespaceSeparator
+    >;
     initialEventName: $$InitialEventName;
     generateId?: () => string;
     namespaceSeparator?: $$NamespaceSeparator;
   },
 ): Schema<
   $$EntityName,
-  $$EventDefinition,
-  $$StateDefinition,
+  $$EventType,
+  $$StateType,
   $$InitialEventName,
   $$NamespaceSeparator
 > {
-  type $$SingleEventSchemaMap = {
-    [eventName in keyof $$EventDefinition]: SingleEventSchema<
-      `${$$EntityName}${$$NamespaceSeparator}${Extract<eventName, string>}`,
-      $$EventDefinition[eventName]
-    >;
-  };
-  type $$SingleEventSchemaTuple = [
-    ValueOf<$$SingleEventSchemaMap>,
-    ...ValueOf<$$SingleEventSchemaMap>[],
-  ];
-
   const namespaceSeparator =
     options.namespaceSeparator ?? (":" as $$NamespaceSeparator);
   const generateId = options.generateId ?? defaultGenerateId;
 
-  const baseEventSchema = v.object({
-    eventId: v.string(),
-    eventCreatedAt: v.string(),
-    entityName: v.string(),
-    entityId: v.string(),
+  const { parseEvent, parseEventByName, parseState } = options.definition({
+    entityName,
+    namespaceSeparator,
   });
 
-  const eventSchemas = Object.entries(options.event).map(([eventName, body]) =>
-    v.object({
-      ...baseEventSchema.entries,
-      eventName: v.literal(`${entityName}${namespaceSeparator}${eventName}`),
-      body,
-    }),
-  ) as $$SingleEventSchemaTuple;
-
   return {
-    event: v.variant("eventName", eventSchemas),
-    state: options.state,
+    parseEvent,
+    parseState,
+    parseEventByName,
     " $$entityName": entityName,
-    " $$eventDefinition": options.event,
-    " $$stateDefinition": options.state,
     " $$initialEventName": options.initialEventName,
-    " $$initialEventBodySchema": options.event[options.initialEventName],
     " $$generateId": generateId,
     " $$namespaceSeparator": namespaceSeparator,
   };

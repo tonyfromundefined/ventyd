@@ -1,5 +1,4 @@
 import sortBy from "just-sort-by";
-import * as v from "valibot";
 import type { Adapter } from "./Adapter";
 import type {
   Entity,
@@ -7,11 +6,8 @@ import type {
   InferSchemaFromEntityConstructor,
 } from "./entity-types";
 import type { Plugin } from "./Plugin";
-import type {
-  InferEntityNameFromSchema,
-  InferEventFromSchema,
-} from "./schema-types";
-import type { ConstructorReturnType, ValibotEmptyObject } from "./util-types";
+import type { InferEntityNameFromSchema, Schema } from "./schema-types";
+import type { ConstructorReturnType } from "./util-types";
 
 /**
  * Repository interface providing persistence operations for entities.
@@ -205,30 +201,32 @@ export function createRepository<
   },
 ): Repository<ConstructorReturnType<$$EntityConstructor>> {
   type $$Schema = InferSchemaFromEntityConstructor<$$EntityConstructor>;
-  type $$Event = InferEventFromSchema<$$Schema>;
   type $$EntityName = InferEntityNameFromSchema<$$Schema>;
   type $$ExtendedEntityType = ConstructorReturnType<$$EntityConstructor>;
 
-  // biome-ignore lint/suspicious/noExplicitAny: entity is valid
-  const _schema: any = Entity.schema;
-
-  const entityName: $$EntityName = _schema[" $$entityName"];
-  const eventSchema: ValibotEmptyObject = _schema.event;
+  const _schema = Entity.schema as Schema<
+    string,
+    { eventName: string },
+    {},
+    string,
+    string
+  >;
+  const entityName = _schema[" $$entityName"] as $$EntityName;
 
   return {
     async findOne({ entityId }) {
       // 1. query events by entity ID
       const rawEvents = await args.adapter.getEventsByEntityId({
-        entityName,
+        entityName: entityName as string,
         entityId,
       });
 
       // 2. validate and sort events from adapter using the schema
-      const EventArraySchema = v.array(eventSchema);
-      const events = sortBy(
-        v.parse(EventArraySchema, rawEvents) as $$Event[],
-        "eventCreatedAt",
-      );
+      // const EventArraySchema = v.array(eventSchema);
+      for (const rawEvent of rawEvents) {
+        _schema.parseEvent(rawEvent);
+      }
+      const events = sortBy(rawEvents, "eventCreatedAt");
 
       if (events.length === 0) {
         return null;

@@ -1,4 +1,3 @@
-import * as v from "valibot";
 import type { Reducer } from "./defineReducer";
 import type { Entity as EntityType } from "./entity-types/Entity";
 import type {
@@ -13,8 +12,8 @@ import type {
   InferInitialEventBodyFromSchema,
   InferInitialEventNameFromSchema,
   InferStateFromSchema,
+  Schema,
 } from "./schema-types";
-import type { ValibotEmptyObject, ValibotEventObject } from "./util-types";
 
 /**
  * Creates an Entity class with event sourcing capabilities.
@@ -67,7 +66,9 @@ import type { ValibotEmptyObject, ValibotEventObject } from "./util-types";
  *
  * @since 1.0.0
  */
-export function Entity<$$Schema>(
+export function Entity<
+  $$Schema extends Schema<string, { eventName: string }, {}, string, string>,
+>(
   schema: $$Schema,
   reducer: Reducer<$$Schema>,
   options?: {
@@ -85,10 +86,6 @@ export function Entity<$$Schema>(
 
   const entityName: $$EntityName = _schema[" $$entityName"];
   const initialEventName: $$InitialEventName = _schema[" $$initialEventName"];
-  const initialEventBodySchema: ValibotEmptyObject =
-    _schema[" $$initialEventBodySchema"];
-  const eventSchema: ValibotEventObject<string, ValibotEmptyObject> =
-    _schema.event;
   const generateId: () => string = _schema[" $$generateId"];
   const namespaceSeparator: string = _schema[" $$namespaceSeparator"];
 
@@ -139,7 +136,10 @@ export function Entity<$$Schema>(
 
           const eventName =
             `${entityName}${namespaceSeparator}${initialEventName}` as EventName;
-          const body = v.parse(initialEventBodySchema, args.body) as EventBody;
+          const body = schema.parseEventByName(
+            eventName,
+            args.body,
+          ) as EventBody;
 
           this.dispatch(eventName, body, {
             eventId: args.eventId,
@@ -159,14 +159,15 @@ export function Entity<$$Schema>(
           // 0. prepare
           const reducer = this[" $$reducer"];
           const prevState = this[" $$state"];
-          const EventArraySchema = v.array(eventSchema);
 
           // 1. validate events
-          const events = v.parse(EventArraySchema, args.events) as $$Event[];
+          for (const event of args.events) {
+            schema.parseEvent(event);
+          }
 
           // 2. compute state
           this.entityId = args.entityId;
-          this[" $$state"] = events.reduce(reducer, prevState);
+          this[" $$state"] = args.events.reduce(reducer, prevState);
           break;
         }
       }
@@ -267,7 +268,7 @@ export function Entity<$$Schema>(
       }
 
       // 1. create event
-      const event = v.parse(eventSchema, {
+      const event = schema.parseEvent({
         eventId: options?.eventId ?? generateId(),
         eventCreatedAt: options?.eventCreatedAt ?? new Date().toISOString(),
         eventName,

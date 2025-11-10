@@ -1,10 +1,8 @@
 import type {
-  EventDefinitionInput,
   InferEntityNameFromSchema,
   InferEventFromSchema,
   InferStateFromSchema,
   Schema,
-  StateDefinitionInput,
 } from "./schema-types";
 
 /**
@@ -261,13 +259,7 @@ import type {
  * @since 2.0.0
  */
 export type Plugin<
-  $$Schema = Schema<
-    string,
-    EventDefinitionInput,
-    StateDefinitionInput,
-    string,
-    ":"
-  >,
+  $$Schema = Schema<string, { eventName: string }, {}, string, ":">,
 > = {
   /**
    * Hook called after events are successfully committed to storage.
