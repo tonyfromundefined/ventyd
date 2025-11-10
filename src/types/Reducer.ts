@@ -11,8 +11,6 @@ import type { InferEventFromSchema, InferStateFromSchema } from "./Schema";
  * Reducers are pure functions that deterministically compute the next state
  * given the previous state and an event. They form the core of the event
  * sourcing pattern by defining how events transform entity state.
- *
- * @since 1.0.0
  */
 export type Reducer<$$Schema> = (
   prevState: InferStateFromSchema<$$Schema>,

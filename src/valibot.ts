@@ -68,29 +68,8 @@ type Tuple<T> = [T, ...T[]];
  *
  * @remarks
  * The `valibot()` provider bridges Valibot's validation capabilities with Ventyd's event sourcing system.
- * It automatically:
- * - Adds entity and event metadata to each event schema
- * - Creates namespaced event names (e.g., "user:created")
- * - Provides type-safe parsing for events and state
- * - Supports discriminated unions for event validation
- *
- * ## Why Valibot?
- *
- * Valibot is the recommended validation library for Ventyd because:
- * 1. **Performance**: Fastest validation library with minimal overhead
- * 2. **Bundle Size**: Extremely lightweight with excellent tree-shaking
- * 3. **Type Safety**: Best-in-class TypeScript inference
- * 4. **Composability**: Pipe-based API for building complex validations
- *
- * ## Event Schema Structure
- *
- * Each event is automatically enriched with metadata:
- * - `eventId`: Unique event identifier
- * - `eventName`: Fully-qualified event name (e.g., "user:created")
- * - `eventCreatedAt`: ISO timestamp when the event was created
- * - `entityName`: The entity type this event belongs to
- * - `entityId`: The specific entity instance this event modifies
- * - `body`: Your custom event payload (defined in the schema)
+ * It automatically adds entity metadata and namespacing to event schemas, providing type-safe parsing
+ * for events and state through discriminated unions
  *
  * @example
  * Basic usage:
@@ -125,93 +104,30 @@ type Tuple<T> = [T, ...T[]];
  * ```
  *
  * @example
- * Using advanced Valibot features:
+ * Using Valibot's pipe and validation features:
  * ```typescript
  * import { defineSchema } from 'ventyd';
  * import { valibot, v } from 'ventyd/valibot';
- *
- * // Custom email validation
- * const EmailSchema = v.pipe(
- *   v.string(),
- *   v.email(),
- *   v.toLowerCase(),
- *   v.maxLength(255)
- * );
- *
- * // Reusable nickname validation
- * const NicknameSchema = v.pipe(
- *   v.string(),
- *   v.minLength(1),
- *   v.maxLength(50),
- *   v.regex(/^[a-zA-Z0-9_-]+$/, "Only alphanumeric, underscore, and dash allowed")
- * );
  *
  * const userSchema = defineSchema("user", {
  *   schema: valibot({
  *     event: {
  *       created: v.object({
- *         email: EmailSchema,
- *         nickname: NicknameSchema,
+ *         email: v.pipe(v.string(), v.email(), v.maxLength(255)),
  *         age: v.pipe(v.number(), v.minValue(13), v.maxValue(120))
- *       }),
- *       profile_updated: v.object({
- *         nickname: v.optional(NicknameSchema),
- *         bio: v.optional(v.pipe(v.string(), v.maxLength(500)))
  *       })
  *     },
  *     state: v.object({
- *       email: EmailSchema,
- *       nickname: NicknameSchema,
- *       age: v.number(),
- *       bio: v.optional(v.string())
+ *       email: v.string(),
+ *       age: v.number()
  *     })
  *   }),
  *   initialEventName: "user:created"
  * });
  * ```
  *
- * @example
- * Complex state with nested objects:
- * ```typescript
- * import { defineSchema } from 'ventyd';
- * import { valibot, v } from 'ventyd/valibot';
- *
- * const orderSchema = defineSchema("order", {
- *   schema: valibot({
- *     event: {
- *       created: v.object({
- *         customerId: v.string(),
- *         items: v.array(v.object({
- *           productId: v.string(),
- *           quantity: v.pipe(v.number(), v.minValue(1)),
- *           price: v.pipe(v.number(), v.minValue(0))
- *         }))
- *       }),
- *       item_added: v.object({
- *         productId: v.string(),
- *         quantity: v.pipe(v.number(), v.minValue(1)),
- *         price: v.pipe(v.number(), v.minValue(0))
- *       })
- *     },
- *     state: v.object({
- *       customerId: v.string(),
- *       items: v.array(v.object({
- *         productId: v.string(),
- *         quantity: v.number(),
- *         price: v.number()
- *       })),
- *       totalAmount: v.number(),
- *       status: v.picklist(["draft", "confirmed", "shipped", "delivered"])
- *     })
- *   }),
- *   initialEventName: "order:created"
- * });
- * ```
- *
  * @see {@link defineSchema} for how to use this with entity schema definition
  * @see {@link SchemaInput} for the schema provider interface
- *
- * @since 1.0.0
  */
 export function valibot<
   $$EntityName extends string,
@@ -289,7 +205,10 @@ export function valibot<
         const schema = eventSchemaMap.get(eventName);
 
         if (!schema) {
-          throw new Error(`Event name ${eventName} not found`);
+          const availableEvents = [...eventSchemaMap.keys()].join(", ");
+          throw new Error(
+            `Event name "${eventName}" not found. Available events: ${availableEvents}`,
+          );
         }
 
         return v.parse(schema, input) as Extract<$$EventType, { eventName: K }>;

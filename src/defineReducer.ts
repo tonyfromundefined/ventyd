@@ -93,8 +93,6 @@ import type { Reducer } from "./types";
  *
  * return newState;
  * ```
- *
- * @since 1.0.0
  */
 export function defineReducer<$$Schema>(
   schema: $$Schema,

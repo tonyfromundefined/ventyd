@@ -285,8 +285,6 @@ Ventyd provides official support for popular TypeScript validation libraries. Ch
 
 ### ✅ Valibot (Currently Supported)
 
-Valibot is the recommended validation library for its exceptional performance and minimal bundle size:
-
 ```typescript
 import { defineSchema } from 'ventyd';
 import { valibot, v } from 'ventyd/valibot';
@@ -310,12 +308,6 @@ const schema = defineSchema("product", {
   initialEventName: "product:created"
 });
 ```
-
-**Why Valibot?**
-- 🚀 **Fastest**: Minimal runtime overhead
-- 📦 **Smallest**: Excellent tree-shaking, pay only for what you use
-- 🔒 **Type-safe**: Best-in-class TypeScript inference
-- 🎯 **Composable**: Pipe-based API for building complex validations
 
 ### 🚧 Coming Soon
 

@@ -118,8 +118,6 @@ import type { BaseEventType } from "./types/BaseEventType";
  *   }
  * });
  * ```
- *
- * @since 1.0.0
  */
 export function createRepository<
   $$EntityConstructor extends EntityConstructor<
@@ -158,7 +156,6 @@ export function createRepository<
       });
 
       // 2. validate and sort events from adapter using the schema
-      // const EventArraySchema = v.array(eventSchema);
       for (const rawEvent of rawEvents) {
         _schema.parseEvent(rawEvent);
       }

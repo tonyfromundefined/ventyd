@@ -62,8 +62,6 @@ import type { BaseEventType } from "./types/BaseEventType";
  * // Access current state
  * console.log(user.state); // { email: "...", nickname: "...", bio: "..." }
  * ```
- *
- * @since 1.0.0
  */
 export function Entity<
   $$Schema extends Schema<string, BaseEventType, {}, string, string>,

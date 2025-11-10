@@ -7,8 +7,6 @@
  * The Repository pattern abstracts storage concerns from domain logic,
  * providing a clean interface for entity persistence and retrieval.
  * All operations are asynchronous to support various storage backends.
- *
- * @since 1.0.0
  */
 export type Repository<$$Entity> = {
   /**

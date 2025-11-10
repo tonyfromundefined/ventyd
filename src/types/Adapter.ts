@@ -181,8 +181,6 @@ import type {
  * - **Monitoring**: Track entity state evolution for debugging
  *
  * Basic adapters can ignore the state parameter - it's provided for advanced use cases.
- *
- * @since 2.0.0
  */
 export type Adapter<$$Schema = DefaultSchema> = {
   /**

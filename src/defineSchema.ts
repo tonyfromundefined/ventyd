@@ -16,36 +16,11 @@ const defaultGenerateId = () => crypto.randomUUID();
  * @returns A fully-typed schema object for use with Entity and Repository
  *
  * @remarks
- * The schema is the foundation of your event-sourced domain model. It defines:
- * - **Events**: All possible events and their payload structures
- * - **State**: The shape of entity state
- * - **Identity**: How entity IDs are generated
- * - **Validation**: Automatic validation through officially supported schema libraries
+ * The schema is the foundation of your event-sourced domain model, defining events,
+ * state structure, identity, and validation through pluggable schema providers.
  *
- * ## Architecture
- *
- * Ventyd supports multiple validation libraries through schema providers:
- * 1. **Type Safety**: Full TypeScript inference throughout the system
- * 2. **Runtime Validation**: Automatic validation of events and state
- * 3. **Event Namespacing**: Events are prefixed with entity name (e.g., `user:created`)
- * 4. **Official Support**: Use Valibot (with Zod, Typebox, ArkType coming soon)
- *
- * ## Supported Schema Libraries
- *
- * Ventyd provides official schema providers for popular validation libraries:
- *
- * - **valibot()**: Currently supported (recommended for performance and bundle size)
- * - **zod()**: Coming soon
- * - **typebox()**: Coming soon
- * - **arktype()**: Coming soon
- *
- * ## Best Practices
- *
- * - **Event Naming**: Use past tense and snake_case for events (e.g., `created`, `updated`, `deleted`)
- * - **Event Granularity**: Prefer fine-grained events over coarse-grained ones
- * - **State Shape**: Keep state flat when possible for better performance
- * - **Initial Event Name**: Always use the fully-qualified name (e.g., "user:created", not "created")
- * - **Namespace Separator**: Use consistent separators across your application
+ * Supports type-safe validation through Valibot (with Zod, Typebox, ArkType coming soon).
+ * Events are automatically namespaced with entity name (e.g., `user:created`)
  *
  * @example
  * Using the Valibot provider:
@@ -113,8 +88,6 @@ const defaultGenerateId = () => crypto.randomUUID();
  *   namespaceSeparator: "/" // Events will be "product/created", "product/updated"
  * });
  * ```
- *
- * @since 1.0.0
  */
 export function defineSchema<
   $$EntityName extends string,

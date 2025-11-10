@@ -5,6 +5,17 @@ import type {
   InferStateFromSchema,
 } from "./Schema";
 
+/**
+ * Arguments for entity constructor.
+ *
+ * @remarks
+ * Supports three initialization modes:
+ * - `create`: Create a new entity with initial event
+ * - `load`: Load entity with pre-computed state (readonly)
+ * - `loadFromEvents`: Load entity by replaying events
+ *
+ * @internal
+ */
 export type EntityConstructorArgs<$$Schema> =
   | {
       type: "create";
