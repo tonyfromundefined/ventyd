@@ -146,7 +146,7 @@ Create an adapter implementation and configure your repository:
 
 ```typescript
 import { createRepository } from 'ventyd';
-import type { Adapter } from 'ventyd';
+import type { Adapter, Plugin } from 'ventyd';
 
 // Create in-memory adapter for development
 const createInMemoryAdapter = (): Adapter => {
@@ -169,9 +169,17 @@ const createInMemoryAdapter = (): Adapter => {
 
 const adapter = createInMemoryAdapter();
 
+// Optional: Create plugins for side effects
+const analyticsPlugin: Plugin = {
+  async onCommitted({ events }) {
+    console.log(`Tracked ${events.length} events`);
+  }
+};
+
 // Create a repository for your entity
 const userRepository = createRepository(User, {
   adapter,
+  plugins: [analyticsPlugin], // Optional
 });
 ```
 
@@ -311,6 +319,238 @@ const createMongoDBAdapter = (uri: string, dbName: string): Adapter => {
 };
 
 const adapter = createMongoDBAdapter('mongodb://localhost:27017', 'myapp');
+```
+
+## Plugins
+
+Plugins extend repository behavior with side effects like analytics, logging, or notifications. They execute **after** events are committed, ensuring the main business flow stays fast and reliable.
+
+### Basic Plugin
+
+Create a plugin by implementing the `Plugin` interface:
+
+```typescript
+import type { Plugin } from 'ventyd';
+
+const analyticsPlugin: Plugin = {
+  async onCommitted({ entityName, entityId, events, state }) {
+    // Track events in your analytics system
+    for (const event of events) {
+      await analytics.track({
+        event: event.eventName,
+        userId: entityId,
+        properties: event.body,
+        timestamp: event.eventCreatedAt
+      });
+    }
+  }
+};
+```
+
+### Using Plugins
+
+Add plugins when creating a repository:
+
+```typescript
+const userRepository = createRepository(User, {
+  adapter,
+  plugins: [analyticsPlugin, auditPlugin, notificationPlugin]
+});
+```
+
+### Plugin Execution Model
+
+Plugins follow these guarantees:
+
+- **After Commit**: Run only after events are safely persisted
+- **Parallel Execution**: All plugins run concurrently (Promise.allSettled)
+- **Isolated Failures**: One plugin failure doesn't affect others
+- **Non-Blocking**: Events commit successfully regardless of plugin outcomes
+
+### Error Handling
+
+Handle plugin errors with the `onPluginError` callback:
+
+```typescript
+const userRepository = createRepository(User, {
+  adapter,
+  plugins: [analyticsPlugin, notificationPlugin],
+  onPluginError: (error, plugin) => {
+    // Log error
+    logger.error('Plugin execution failed', {
+      error: error instanceof Error ? error.message : String(error)
+    });
+
+    // Send to error tracking
+    sentry.captureException(error, {
+      tags: { component: 'plugin' }
+    });
+  }
+});
+```
+
+### Common Plugin Patterns
+
+#### Analytics Plugin
+
+Track business metrics and user behavior:
+
+```typescript
+const analyticsPlugin: Plugin = {
+  async onCommitted({ events }) {
+    const metrics = events.map(event => ({
+      name: event.eventName,
+      timestamp: event.eventCreatedAt,
+      properties: event.body
+    }));
+
+    await analytics.track(metrics);
+  }
+};
+```
+
+#### Audit Logging Plugin
+
+Record all state changes for compliance:
+
+```typescript
+const auditPlugin: Plugin = {
+  async onCommitted({ entityName, entityId, events, state }) {
+    await auditLog.record({
+      entity: `${entityName}:${entityId}`,
+      eventCount: events.length,
+      eventNames: events.map(e => e.eventName),
+      finalState: state,
+      timestamp: new Date().toISOString()
+    });
+  }
+};
+```
+
+#### Event Broadcasting Plugin
+
+Publish events to message queues or webhooks:
+
+```typescript
+const eventBusPlugin: Plugin = {
+  async onCommitted({ entityName, entityId, events }) {
+    for (const event of events) {
+      await eventBus.publish(event.eventName, {
+        entityName,
+        entityId,
+        body: event.body,
+        timestamp: event.eventCreatedAt
+      });
+    }
+  }
+};
+```
+
+#### Search Indexing Plugin
+
+Keep search indexes synchronized with entity state:
+
+```typescript
+const searchIndexPlugin: Plugin = {
+  async onCommitted({ entityName, entityId, state }) {
+    await searchEngine.index({
+      id: `${entityName}:${entityId}`,
+      type: entityName,
+      document: state
+    });
+  }
+};
+```
+
+#### Conditional Notification Plugin
+
+Send notifications only for important events:
+
+```typescript
+const notificationPlugin: Plugin = {
+  async onCommitted({ events, state }) {
+    const importantEvents = events.filter(e =>
+      e.eventName.includes('created') ||
+      e.eventName.includes('deleted')
+    );
+
+    if (importantEvents.length > 0) {
+      await notificationService.send({
+        title: 'Important Event',
+        message: `${importantEvents.length} important events occurred`,
+        data: { events: importantEvents }
+      });
+    }
+  }
+};
+```
+
+### Plugin Best Practices
+
+1. **Keep Plugins Fast**: Plugins block commit() completion. For heavy work, enqueue background jobs instead.
+
+```typescript
+// Good - Enqueue for background processing
+const heavyPlugin: Plugin = {
+  async onCommitted({ events }) {
+    await jobQueue.enqueue('process-events', events);
+  }
+};
+
+// Avoid - Heavy processing blocks commit
+const slowPlugin: Plugin = {
+  async onCommitted({ events }) {
+    await processLargeDataset(events); // Too slow!
+  }
+};
+```
+
+2. **Make Plugins Idempotent**: Use event IDs to prevent duplicate processing.
+
+```typescript
+const idempotentPlugin: Plugin = {
+  async onCommitted({ events }) {
+    for (const event of events) {
+      // Use event ID to ensure exactly-once processing
+      await processOnce(event.eventId, () => {
+        return analytics.track(event);
+      });
+    }
+  }
+};
+```
+
+3. **Handle Errors Gracefully**: Don't let plugin errors disrupt the main flow.
+
+```typescript
+const resilientPlugin: Plugin = {
+  async onCommitted({ events }) {
+    try {
+      await externalService.notify(events);
+    } catch (error) {
+      // Log but don't throw - notifications are non-critical
+      logger.error('Notification failed', error);
+    }
+  }
+};
+```
+
+4. **Respect Entity Boundaries**: Work with provided data, don't load other entities.
+
+```typescript
+// Good - Use provided data
+const goodPlugin: Plugin = {
+  async onCommitted({ entityName, entityId, events }) {
+    await logger.info(`${entityName}:${entityId} had ${events.length} events`);
+  }
+};
+
+// Avoid - Don't load other entities
+const badPlugin: Plugin = {
+  async onCommitted({ entityId }) {
+    const user = await userRepo.findOne({ entityId }); // Don't do this
+  }
+};
 ```
 
 ## Best Practices
