@@ -3,7 +3,7 @@ import type {
   InferEventFromSchema,
   InferStateFromSchema,
   Schema,
-} from "./schema-types";
+} from "./Schema";
 
 /**
  * Adapter interface for persisting and retrieving events.

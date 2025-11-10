@@ -1,4 +1,4 @@
-import type { Schema, SchemaInput } from "./schema-types";
+import type { Schema, SchemaInput } from "./types";
 
 const defaultGenerateId = () => crypto.randomUUID();
 
@@ -105,7 +105,7 @@ export function defineSchema<
 >(
   entityName: $$EntityName,
   options: {
-    definition: SchemaInput<
+    schema: SchemaInput<
       $$EntityName,
       $$EventType,
       $$StateType,
@@ -126,7 +126,7 @@ export function defineSchema<
     options.namespaceSeparator ?? (":" as $$NamespaceSeparator);
   const generateId = options.generateId ?? defaultGenerateId;
 
-  const { parseEvent, parseEventByName, parseState } = options.definition({
+  const { parseEvent, parseEventByName, parseState } = options.schema({
     entityName,
     namespaceSeparator,
   });

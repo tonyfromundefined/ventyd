@@ -1,8 +1,9 @@
 import * as v from "valibot";
-import type { SchemaInput } from "../schema-types";
-import type { ValibotEmptyObject, ValueOf } from "../util-types";
+import type { SchemaInput, ValueOf } from "./types";
 
-type $$ValibotEventSchema<
+type ValibotEmptyObject = v.ObjectSchema<v.ObjectEntries, undefined>;
+
+type ValibotBaseEventObject<
   EventName extends string,
   Body extends ValibotEmptyObject,
 > = v.ObjectSchema<
@@ -17,20 +18,20 @@ type $$ValibotEventSchema<
   undefined
 >;
 
-type $$ValibotSingleEventSchemaFromDefinition<
+type ValibotEventObject<
   $$EntityName extends string,
   $$EventDefinition extends {
     [eventName: string]: ValibotEmptyObject;
   },
   $$NamespaceSeparator extends string,
 > = ValueOf<{
-  [key in keyof $$EventDefinition]: $$ValibotEventSchema<
+  [key in keyof $$EventDefinition]: ValibotBaseEventObject<
     `${$$EntityName}${$$NamespaceSeparator}${Extract<key, string>}`,
     $$EventDefinition[key]
   >;
 }>;
 
-type $$ValibotEventSchemaFromDefinition<
+type ValibotCompleteEventObject<
   $$EntityName extends string,
   $$EventDefinition extends {
     [eventName: string]: ValibotEmptyObject;
@@ -38,13 +39,11 @@ type $$ValibotEventSchemaFromDefinition<
   $$NamespaceSeparator extends string,
 > = v.VariantSchema<
   "eventName",
-  $$ValibotSingleEventSchemaFromDefinition<
-    $$EntityName,
-    $$EventDefinition,
-    $$NamespaceSeparator
-  >[],
+  ValibotEventObject<$$EntityName, $$EventDefinition, $$NamespaceSeparator>[],
   undefined
 >;
+
+type Tuple<T> = [T, ...T[]];
 
 export function valibot<
   $$EntityName extends string,
@@ -59,7 +58,7 @@ export function valibot<
 }): SchemaInput<
   $$EntityName,
   v.InferOutput<
-    $$ValibotEventSchemaFromDefinition<
+    ValibotCompleteEventObject<
       $$EntityName,
       $$EventDefinition,
       $$NamespaceSeparator
@@ -69,26 +68,20 @@ export function valibot<
   $$NamespaceSeparator
 > {
   return (context) => {
-    type $$EventType = v.InferOutput<
-      $$ValibotEventSchemaFromDefinition<
-        $$EntityName,
-        $$EventDefinition,
-        $$NamespaceSeparator
-      >
+    type $$EventObject = ValibotEventObject<
+      $$EntityName,
+      $$EventDefinition,
+      $$NamespaceSeparator
+    >;
+    type $$EventObjectTuple = Tuple<$$EventObject>;
+
+    type $$EventCompleteObject = ValibotCompleteEventObject<
+      $$EntityName,
+      $$EventDefinition,
+      $$NamespaceSeparator
     >;
 
-    type $$SingleEventSchemaTuple = [
-      $$ValibotSingleEventSchemaFromDefinition<
-        $$EntityName,
-        $$EventDefinition,
-        $$NamespaceSeparator
-      >,
-      ...$$ValibotSingleEventSchemaFromDefinition<
-        $$EntityName,
-        $$EventDefinition,
-        $$NamespaceSeparator
-      >[],
-    ];
+    type $$EventType = v.InferOutput<$$EventCompleteObject>;
 
     const baseEventSchema = v.object({
       eventId: v.string(),
@@ -110,9 +103,7 @@ export function valibot<
       }),
     ]);
 
-    const eventSchemaTuple = [
-      ...eventSchemaMap.values(),
-    ] as $$SingleEventSchemaTuple;
+    const eventSchemaTuple = [...eventSchemaMap.values()] as $$EventObjectTuple;
 
     return {
       parseEvent(input) {
@@ -136,3 +127,5 @@ export function valibot<
     };
   };
 }
+
+export * as v from "valibot";

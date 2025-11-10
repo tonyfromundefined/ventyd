@@ -3,7 +3,7 @@ import type {
   InferEventFromSchema,
   InferStateFromSchema,
   Schema,
-} from "./schema-types";
+} from "./Schema";
 
 /**
  * Plugin interface for extending repository behavior with side effects.

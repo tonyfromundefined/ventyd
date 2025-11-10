@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
 
-import type { Adapter } from "../../src/Adapter";
+import type { Adapter } from "../../src";
 
 type BaseEvent = {
   eventId: string;
@@ -34,6 +34,8 @@ export const createInMemoryAdapter = (): InMemoryAdapter => {
      * Commits new events to the adapter.
      */
     async commitEvents(args: {
+      entityName: string;
+      entityId: string;
       events: BaseEvent[];
       state: any;
     }): Promise<void> {

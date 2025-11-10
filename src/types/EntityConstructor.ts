@@ -1,9 +1,9 @@
+import type { Entity } from "./Entity";
 import type {
   InferEventFromSchema,
   InferInitialEventBodyFromSchema,
   InferStateFromSchema,
-} from "../schema-types";
-import type { Entity } from "./Entity";
+} from "./Schema";
 
 export type EntityConstructorArgs<$$Schema> =
   | {

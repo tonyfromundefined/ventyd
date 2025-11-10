@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { type Db, MongoClient } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import type { Adapter } from "../../src/Adapter";
+import type { Adapter } from "../../src";
 import { createInMemoryAdapter, type InMemoryAdapter } from "./InMemoryAdapter";
 import { createMongoDBAdapter, type MongoDBAdapter } from "./MongoDBAdapter";
 import { createSQLiteAdapter, type SQLiteAdapter } from "./SQLiteAdapter";

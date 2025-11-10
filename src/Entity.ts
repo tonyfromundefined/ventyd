@@ -1,10 +1,7 @@
-import type { Reducer } from "./defineReducer";
-import type { Entity as EntityType } from "./entity-types/Entity";
 import type {
   EntityConstructor,
   EntityConstructorArgs,
-} from "./entity-types/EntityConstructor";
-import type {
+  Entity as EntityType,
   InferEntityNameFromSchema,
   InferEventBodyFromSchema,
   InferEventFromSchema,
@@ -12,8 +9,9 @@ import type {
   InferInitialEventBodyFromSchema,
   InferInitialEventNameFromSchema,
   InferStateFromSchema,
+  Reducer,
   Schema,
-} from "./schema-types";
+} from "./types";
 
 /**
  * Creates an Entity class with event sourcing capabilities.
