@@ -85,7 +85,6 @@ export function Entity<
   const entityName: $$EntityName = _schema[" $$entityName"];
   const initialEventName: $$InitialEventName = _schema[" $$initialEventName"];
   const generateId: () => string = _schema[" $$generateId"];
-  const namespaceSeparator: string = _schema[" $$namespaceSeparator"];
 
   // options
   const maxQueuedEvents = options?.maxQueuedEvents ?? 10000; // Default to 10000 events
@@ -132,14 +131,17 @@ export function Entity<
           type EventName = InferEventNameFromSchema<$$Schema>;
           type EventBody = InferEventBodyFromSchema<$$Schema, EventName>;
 
-          const eventName =
-            `${entityName}${namespaceSeparator}${initialEventName}` as EventName;
-          const body = schema.parseEventByName(
-            eventName,
-            args.body,
-          ) as EventBody;
+          const eventName = initialEventName as EventName;
+          const eventBody = args.body as EventBody;
 
-          this.dispatch(eventName, body, {
+          // 1. validate event before dispatching
+          schema.parseEventByName(
+            eventName,
+            this[" $$createEvent"](eventName, eventBody),
+          );
+
+          // 2. dispatch event
+          this.dispatch(eventName, args.body as EventBody, {
             eventId: args.eventId,
             eventCreatedAt: args.eventCreatedAt,
           });
@@ -266,14 +268,9 @@ export function Entity<
       }
 
       // 1. create event
-      const event = schema.parseEvent({
-        eventId: options?.eventId ?? generateId(),
-        eventCreatedAt: options?.eventCreatedAt ?? new Date().toISOString(),
-        eventName,
-        entityId: this.entityId,
-        entityName: this.entityName,
-        body,
-      }) as $$Event;
+      const event = schema.parseEvent(
+        this[" $$createEvent"](eventName, body, options),
+      ) as $$Event;
 
       // 2. add event to queue
       queuedEvents.push(event);
@@ -287,6 +284,24 @@ export function Entity<
     // ----------------------
     " $$flush"() {
       this[" $$queuedEvents"] = [];
+    }
+
+    " $$createEvent"<EventName extends InferEventNameFromSchema<$$Schema>>(
+      eventName: EventName,
+      body: InferEventBodyFromSchema<$$Schema, EventName>,
+      options?: {
+        eventId?: string;
+        eventCreatedAt?: string;
+      },
+    ) {
+      return {
+        eventId: options?.eventId ?? generateId(),
+        eventCreatedAt: options?.eventCreatedAt ?? new Date().toISOString(),
+        eventName,
+        entityId: this.entityId,
+        entityName: this.entityName,
+        body,
+      };
     }
   };
 }

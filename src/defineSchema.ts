@@ -133,8 +133,8 @@ export function defineSchema<
 
   return {
     parseEvent,
-    parseState,
     parseEventByName,
+    parseState,
     " $$entityName": entityName,
     " $$initialEventName": options.initialEventName,
     " $$generateId": generateId,
