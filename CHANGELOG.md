@@ -1,5 +1,11 @@
 # ventyd
 
+## 1.7.1
+
+### Patch Changes
+
+- 75763f1: refactor: improve type handling in Entity and mutation functions
+
 ## 1.7.0
 
 ### Minor Changes
