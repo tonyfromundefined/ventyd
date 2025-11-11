@@ -1,5 +1,12 @@
 # ventyd
 
+## 1.7.0
+
+### Minor Changes
+
+- a6ed709: feat: can use ventyd regardless of schema library.
+- 7cfc8e3: feat: enhance CQRS feature with `mutation` helper function
+
 ## 1.6.0
 
 ### Minor Changes
