@@ -1010,6 +1010,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@standard-schema/spec@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@standard-schema/spec@npm:1.0.0"
+  checksum: 10c0/a1ab9a8bdc09b5b47aa8365d0e0ec40cc2df6437be02853696a0e377321653b0d3ac6f079a8c67d5ddbe9821025584b1fb71d9cc041a6666a96f1fadf2ece15f
+  languageName: node
+  linkType: hard
+
 "@swc/core-darwin-arm64@npm:1.13.20":
   version: 1.13.20
   resolution: "@swc/core-darwin-arm64@npm:1.13.20"
@@ -4074,6 +4081,7 @@ __metadata:
   dependencies:
     "@biomejs/biome": "npm:^2.2.4"
     "@changesets/cli": "npm:^2.29.7"
+    "@standard-schema/spec": "npm:^1.0.0"
     "@types/better-sqlite3": "npm:^7.6.13"
     "@types/node": "npm:^24.5.2"
     "@vitest/coverage-v8": "npm:3.2.4"
