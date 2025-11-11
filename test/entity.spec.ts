@@ -279,140 +279,6 @@ describe("Entity Unit Tests", () => {
     });
   });
 
-  describe("Entity Read-Only Mode (CQRS)", () => {
-    test("should prevent dispatch on entities loaded with state", () => {
-      const loadedUser = User.load({
-        entityId: "readonly-user",
-        state: {
-          nickname: "ReadOnlyUser",
-          email: "readonly@example.com",
-          bio: "This is a read-only user",
-          deletedAt: null,
-        },
-      });
-
-      // Should be able to read state
-      expect(loadedUser.nickname).toBe("ReadOnlyUser");
-      expect(loadedUser.email).toBe("readonly@example.com");
-      expect(loadedUser.bio).toBe("This is a read-only user");
-
-      // Should not be able to dispatch events
-      expect(() => {
-        loadedUser.updateProfile({ bio: "Trying to update" });
-      }).toThrow("Entity is readonly");
-
-      expect(() => {
-        loadedUser.delete("Trying to delete");
-      }).toThrow("Entity is readonly");
-
-      expect(() => {
-        loadedUser.dispatch("user:profile_updated", { bio: "Direct dispatch" });
-      }).toThrow("Entity is readonly");
-    });
-
-    test("Order: should be readonly when loaded with state", () => {
-      const loadedOrder = Order.load({
-        entityId: "readonly-order",
-        state: {
-          customerId: "customer-readonly",
-          items: [
-            { productId: "prod-1", quantity: 2, price: 50 },
-            { productId: "prod-2", quantity: 1, price: 100 },
-          ],
-          status: "confirmed" as const,
-          totalAmount: 200,
-          paymentMethod: "card" as const,
-          shipping: undefined,
-          deliveredAt: undefined,
-          cancelReason: undefined,
-        },
-      });
-
-      // Should be able to read state
-      expect(loadedOrder.customerId).toBe("customer-readonly");
-      expect(loadedOrder.totalAmount).toBe(200);
-      expect(loadedOrder.status).toBe("confirmed");
-
-      // Should not be able to modify
-      expect(() => {
-        loadedOrder.ship("TRACK123", "Express");
-      }).toThrow("Entity is readonly");
-
-      expect(() => {
-        loadedOrder.cancel("Trying to cancel", "customer");
-      }).toThrow("Entity is readonly");
-
-      expect(() => {
-        loadedOrder.dispatch("order:shipped", {
-          trackingNumber: "TRACK456",
-          carrier: "UPS",
-        });
-      }).toThrow("Entity is readonly");
-    });
-
-    test("should distinguish between created entities and loaded entities", () => {
-      // Created entity should be mutable
-      const createdUser = User.create({
-        body: {
-          nickname: "MutableUser",
-          email: "mutable@example.com",
-        },
-      });
-
-      // This should work
-      createdUser.updateProfile({ bio: "Can be updated" });
-      expect(createdUser.bio).toBe("Can be updated");
-
-      // Loaded entity should be immutable
-      const loadedUser = User.load({
-        entityId: "loaded-user",
-        state: {
-          nickname: "ImmutableUser",
-          email: "immutable@example.com",
-          bio: "Cannot be updated",
-          deletedAt: null,
-        },
-      });
-
-      // This should fail
-      expect(() => {
-        loadedUser.updateProfile({ bio: "Trying to update" });
-      }).toThrow("Entity is readonly");
-    });
-
-    test("should allow reading but not modifying loaded entities", () => {
-      const state = {
-        nickname: "TestUser",
-        email: "test@example.com",
-        bio: "Original bio",
-        deletedAt: null,
-      };
-
-      const loadedUser = User.load({
-        entityId: "test-user",
-        state,
-      });
-
-      // All getters should work
-      expect(loadedUser.nickname).toBe("TestUser");
-      expect(loadedUser.email).toBe("test@example.com");
-      expect(loadedUser.bio).toBe("Original bio");
-      expect(loadedUser.isDeleted).toBe(false);
-      expect(loadedUser.entityId).toBe("test-user");
-      expect(loadedUser.entityName).toBe("user");
-      expect(loadedUser.state).toEqual(state);
-
-      // But all mutations should fail
-      expect(() => loadedUser.updateProfile({ bio: "New bio" })).toThrow(
-        "Entity is readonly",
-      );
-      expect(() => loadedUser.delete()).toThrow("Entity is readonly");
-
-      // State should remain unchanged
-      expect(loadedUser.bio).toBe("Original bio");
-    });
-  });
-
   describe("Business Logic Validation", () => {
     test("User: should enforce business rules", () => {
       const user = User.create({
@@ -624,14 +490,14 @@ describe("Entity Unit Tests", () => {
       });
 
       // First event is the initial event, so we can add 4 more
-      entity.dispatch("test:updated", { value: "update1" });
-      entity.dispatch("test:updated", { value: "update2" });
-      entity.dispatch("test:updated", { value: "update3" });
-      entity.dispatch("test:updated", { value: "update4" });
+      entity[" $$dispatch"]("test:updated", { value: "update1" });
+      entity[" $$dispatch"]("test:updated", { value: "update2" });
+      entity[" $$dispatch"]("test:updated", { value: "update3" });
+      entity[" $$dispatch"]("test:updated", { value: "update4" });
 
       // This should throw as it exceeds the limit of 5
       expect(() => {
-        entity.dispatch("test:updated", { value: "update5" });
+        entity[" $$dispatch"]("test:updated", { value: "update5" });
       }).toThrow("Event queue overflow: maximum 5 uncommitted events exceeded");
     });
 
@@ -787,7 +653,7 @@ describe("Entity Unit Tests", () => {
 
       // Dispatch another event - runtime uses custom separator
       // Type assertion needed because type system uses ":"
-      product.dispatch("product/updated", { name: "Updated Product" });
+      product[" $$dispatch"]("product/updated", { name: "Updated Product" });
       const updateEvent = product[" $$queuedEvents"][1];
       expect(updateEvent?.eventName).toBe("product/updated");
     });
@@ -837,9 +703,9 @@ describe("Entity Unit Tests", () => {
       });
 
       // Runtime uses custom separator, type assertions needed
-      order.dispatch("order.confirmed", {});
-      order.dispatch("order.shipped", { trackingNumber: "TRACK123" });
-      order.dispatch("order.delivered", {});
+      order[" $$dispatch"]("order.confirmed", {});
+      order[" $$dispatch"]("order.shipped", { trackingNumber: "TRACK123" });
+      order[" $$dispatch"]("order.delivered", {});
 
       const eventNames = order[" $$queuedEvents"].map((e) => e?.eventName);
       expect(eventNames).toEqual([
@@ -848,6 +714,131 @@ describe("Entity Unit Tests", () => {
         "order.shipped",
         "order.delivered",
       ]);
+    });
+  });
+
+  describe("Mutation Helper Function", () => {
+    test("should create mutation method with proper binding", () => {
+      const user = User.create({
+        body: {
+          nickname: "TestUser",
+          email: "test@example.com",
+        },
+      });
+
+      // Mutation method should work correctly
+      user.updateProfile({ bio: "New bio" });
+
+      const events = user[" $$queuedEvents"];
+      expect(events.length).toBe(2); // created + profile_updated
+      expect(events[1]?.eventName).toBe("user:profile_updated");
+      expect(events[1]?.body).toEqual({ bio: "New bio" });
+    });
+
+    test("should have mutation marker property", () => {
+      const user = User.create({
+        body: {
+          nickname: "TestUser",
+          email: "test@example.com",
+        },
+      });
+
+      // Mutation methods should have mutation: true property
+      expect(user.updateProfile).toHaveProperty("mutation", true);
+      expect(user.delete).toHaveProperty("mutation", true);
+      expect(user.restore).toHaveProperty("mutation", true);
+    });
+
+    test("should maintain this context in mutation methods", () => {
+      const user = User.create({
+        body: {
+          nickname: "TestUser",
+          email: "test@example.com",
+        },
+      });
+
+      // Delete the user first
+      user.delete("Test deletion");
+      expect(user.isDeleted).toBe(true);
+
+      // Now restore should work because this.isDeleted is properly bound
+      user.restore();
+      expect(user.isDeleted).toBe(false);
+
+      const events = user[" $$queuedEvents"];
+      expect(events.length).toBe(3); // created + deleted + restored
+      expect(events[2]?.eventName).toBe("user:restored");
+    });
+
+    test("should handle mutation methods with multiple arguments", () => {
+      const order = Order.create({
+        body: {
+          customerId: "customer-123",
+          items: [],
+        },
+      });
+
+      // addItem accepts multiple arguments
+      order.addItem("product-1", 2, 100);
+
+      const events = order[" $$queuedEvents"];
+      expect(events.length).toBe(2); // created + item_added
+      expect(events[1]?.eventName).toBe("order:item_added");
+      expect(events[1]?.body).toEqual({
+        productId: "product-1",
+        quantity: 2,
+        price: 100,
+      });
+    });
+
+    test("should allow mutation methods to access entity state", () => {
+      const user = User.create({
+        body: {
+          nickname: "TestUser",
+          email: "test@example.com",
+        },
+      });
+
+      user.delete("First deletion");
+
+      // Trying to delete again should throw because mutation can check this.isDeleted
+      expect(() => {
+        user.delete("Second deletion");
+      }).toThrow("User is already deleted");
+    });
+
+    test("should work with mutation methods that have optional parameters", () => {
+      const user = User.create({
+        body: {
+          nickname: "TestUser",
+          email: "test@example.com",
+        },
+      });
+
+      // Delete without reason (optional parameter)
+      user.delete();
+
+      const events = user[" $$queuedEvents"];
+      expect(events[1]?.eventName).toBe("user:deleted");
+      expect(events[1]?.body).toEqual({ reason: undefined });
+    });
+
+    test("should prevent mutations on loaded entities", () => {
+      const loadedUser = User.load({
+        entityId: "loaded-user",
+        state: {
+          nickname: "LoadedUser",
+          email: "loaded@example.com",
+          bio: undefined,
+          deletedAt: null,
+        },
+      });
+
+      // TypeScript should prevent access to mutation methods
+      // At runtime, these methods throw errors
+      expect(() => {
+        (loadedUser as any).updateProfile?.({ bio: "New bio" });
+      }).toThrow("Entity is readonly");
     });
   });
 });

@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { defineReducer, defineSchema, Entity } from "../../src";
+import { defineReducer, defineSchema, Entity, mutation } from "../../src";
 import { valibot } from "../../src/valibot";
 
 /**
@@ -95,27 +95,30 @@ export class User extends Entity(userSchema, userReducer) {
   // ----------------------
   // Business methods
   // ----------------------
-  updateProfile(updates: { nickname?: string; bio?: string }) {
-    if (this.isDeleted) {
-      throw new Error("Cannot update profile of deleted user");
-    }
+  updateProfile = mutation(
+    this,
+    (dispatch, updates: { nickname?: string; bio?: string }) => {
+      if (this.isDeleted) {
+        throw new Error("Cannot update profile of deleted user");
+      }
 
-    this.dispatch("user:profile_updated", updates);
-  }
+      dispatch("user:profile_updated", updates);
+    },
+  );
 
-  delete(reason?: string) {
+  delete = mutation(this, (dispatch, reason?: string) => {
     if (this.isDeleted) {
       throw new Error("User is already deleted");
     }
 
-    this.dispatch("user:deleted", { reason });
-  }
+    dispatch("user:deleted", { reason });
+  });
 
-  restore() {
+  restore = mutation(this, (dispatch) => {
     if (!this.isDeleted) {
       throw new Error("User is not deleted");
     }
 
-    this.dispatch("user:restored", {});
-  }
+    dispatch("user:restored", {});
+  });
 }

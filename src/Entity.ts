@@ -13,6 +13,7 @@ import type {
   Schema,
 } from "./types";
 import type { BaseEventType } from "./types/BaseEventType";
+import type { ReadonlyEntity } from "./types/ReadonlyEntity";
 
 /**
  * Creates an Entity class with event sourcing capabilities.
@@ -140,7 +141,7 @@ export function Entity<
           );
 
           // 2. dispatch event
-          this.dispatch(eventName, args.body as EventBody, {
+          this[" $$dispatch"](eventName, args.body as EventBody, {
             eventId: args.eventId,
             eventCreatedAt: args.eventCreatedAt,
           });
@@ -207,13 +208,13 @@ export function Entity<
         entityId: string;
         state: InferStateFromSchema<$$Schema>;
       },
-    ): T {
+    ): ReadonlyEntity<T> {
       // biome-ignore lint/complexity/noThisInStatic: inheritance
       return new this({
         type: "load",
         entityId: args.entityId,
         state: args.state,
-      });
+      }) as ReadonlyEntity<T>;
     }
 
     /**
@@ -237,9 +238,9 @@ export function Entity<
     }
 
     // ----------------------
-    // public methods
+    // private methods
     // ----------------------
-    dispatch<EventName extends InferEventNameFromSchema<$$Schema>>(
+    " $$dispatch"<EventName extends InferEventNameFromSchema<$$Schema>>(
       eventName: EventName,
       body: InferEventBodyFromSchema<$$Schema, EventName>,
       options?: {
@@ -278,9 +279,6 @@ export function Entity<
       this[" $$state"] = reducer(prevState, event);
     }
 
-    // ----------------------
-    // private methods
-    // ----------------------
     " $$flush"() {
       this[" $$queuedEvents"] = [];
     }
