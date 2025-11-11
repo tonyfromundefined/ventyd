@@ -27,6 +27,16 @@
       "types": "./dist/typebox.d.ts",
       "import": "./dist/typebox.js",
       "require": "./dist/typebox.cjs"
+    },
+    "./zod": {
+      "types": "./dist/zod.d.ts",
+      "import": "./dist/zod.js",
+      "require": "./dist/zod.cjs"
+    },
+    "./arktype": {
+      "types": "./dist/arktype.d.ts",
+      "import": "./dist/arktype.js",
+      "require": "./dist/arktype.cjs"
     }
   },
   "main": "./dist/index.js",
@@ -54,6 +64,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.5.2",
     "@vitest/coverage-v8": "3.2.4",
+    "arktype": "^2.1.26",
     "better-sqlite3": "^12.4.1",
     "bunchee": "^6.6.0",
     "mongodb": "^6.20.0",
@@ -66,6 +77,7 @@
   "peerDependencies": {
     "@sinclair/typebox": "^0.34.41",
     "@sinclair/typemap": "^0.10.1",
+    "arktype": ">=2.0.0",
     "valibot": "^1.0.0",
     "zod": ">=3.24.1"
   },
@@ -74,6 +86,9 @@
       "optional": true
     },
     "@sinclair/typemap": {
+      "optional": true
+    },
+    "arktype": {
       "optional": true
     },
     "valibot": {

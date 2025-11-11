@@ -131,23 +131,17 @@ export function typebox<
   const input: $$SchemaInput = (context) => {
     const namespaceSeparator = args.namespaceSeparator ?? ":";
 
-    const baseEventSchema = Type.Object({
-      eventId: Type.String(),
-      eventCreatedAt: Type.String(),
-      entityName: Type.String(),
-      entityId: Type.String(),
-    });
-
     const event = Object.entries(args.event).reduce((acc, [key, body]) => {
       const eventName = `${context.entityName}${namespaceSeparator}${key}`;
       const schema = Compile(
-        Type.Intersect([
-          baseEventSchema,
-          Type.Object({
-            eventName: Type.Literal(eventName),
-            body,
-          }),
-        ]),
+        Type.Object({
+          eventId: Type.String(),
+          eventCreatedAt: Type.String(),
+          entityName: Type.String(),
+          entityId: Type.String(),
+          eventName: Type.Literal(eventName),
+          body,
+        }),
       );
       return {
         // biome-ignore lint/performance/noAccumulatingSpread: readonly acc

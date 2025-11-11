@@ -129,17 +129,13 @@ export function valibot<
   const input: $$SchemaInput = (context) => {
     const namespaceSeparator = args.namespaceSeparator ?? ":";
 
-    const baseEventSchema = v.object({
-      eventId: v.string(),
-      eventCreatedAt: v.string(),
-      entityName: v.string(),
-      entityId: v.string(),
-    });
-
     const event = Object.entries(args.event).reduce((acc, [key, body]) => {
       const eventName = `${context.entityName}${namespaceSeparator}${key}`;
       const schema = v.object({
-        ...baseEventSchema.entries,
+        eventId: v.string(),
+        eventCreatedAt: v.string(),
+        entityName: v.string(),
+        entityId: v.string(),
         eventName: v.literal(eventName),
         body,
       });
