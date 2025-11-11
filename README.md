@@ -16,11 +16,7 @@ A TypeScript-first event sourcing library with full type safety and flexible sto
 ## Installation
 
 ```bash
-npm install ventyd
-# or
-yarn add ventyd
-# or
-pnpm add ventyd
+$ yarn add ventyd
 ```
 
 ### Installing Validation Libraries
@@ -29,14 +25,15 @@ Ventyd is built on the [Standard Schema](https://standardschema.dev) specificati
 
 ```bash
 # Valibot (has built-in helper)
-npm install valibot
+$ yarn add valibot
 
 # TypeBox (has built-in helper)
-npm install @sinclair/typebox @sinclair/typemap
+# Note: `@sinclair/typemap` depends on `zod` for Standard Schema conversion
+$ yarn add @sinclair/typebox @sinclair/typemap zod
 
 # Or use any Standard Schema-compliant library directly
-npm install @standard-schema/spec
-npm install zod  # or arktype, etc.
+$ yarn add @standard-schema/spec
+$ yarn add zod  # or arktype, etc.
 ```
 
 ## Quick Start
