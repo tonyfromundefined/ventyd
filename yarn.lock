@@ -1010,6 +1010,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@sinclair/typebox@npm:^0.34.41":
+  version: 0.34.41
+  resolution: "@sinclair/typebox@npm:0.34.41"
+  checksum: 10c0/0fb61fc2f90c25e30b19b0096eb8ab3ccef401d3e2acfce42168ff0ee877ba5981c8243fa6b1035ac756cde95316724e978b2837dd642d7e4e095de03a999c90
+  languageName: node
+  linkType: hard
+
+"@sinclair/typemap@npm:^0.10.1":
+  version: 0.10.1
+  resolution: "@sinclair/typemap@npm:0.10.1"
+  peerDependencies:
+    "@sinclair/typebox": ^0.34.30
+    valibot: ^1.0.0
+    zod: ^3.24.1
+  checksum: 10c0/261af79397989ec9b33dbeb6427e0c6c514f396501142c2f62481c1795f38d55a7420822a81313ad461a68618f5608b48f8e92e8c3d8f932dfde3354a22fbf56
+  languageName: node
+  linkType: hard
+
 "@standard-schema/spec@npm:^1.0.0":
   version: 1.0.0
   resolution: "@standard-schema/spec@npm:1.0.0"
@@ -4081,6 +4099,8 @@ __metadata:
   dependencies:
     "@biomejs/biome": "npm:^2.2.4"
     "@changesets/cli": "npm:^2.29.7"
+    "@sinclair/typebox": "npm:^0.34.41"
+    "@sinclair/typemap": "npm:^0.10.1"
     "@standard-schema/spec": "npm:^1.0.0"
     "@types/better-sqlite3": "npm:^7.6.13"
     "@types/node": "npm:^24.5.2"
@@ -4093,10 +4113,20 @@ __metadata:
     typescript: "npm:^5.9.2"
     valibot: "npm:^1.1.0"
     vitest: "npm:^3.2.4"
+    zod: "npm:^3.24.1"
   peerDependencies:
-    valibot: ^0.42.0 || ^1.0.0
+    "@sinclair/typebox": ^0.34.41
+    "@sinclair/typemap": ^0.10.1
+    valibot: ^1.0.0
+    zod: ">=3.24.1"
   peerDependenciesMeta:
+    "@sinclair/typebox":
+      optional: true
+    "@sinclair/typemap":
+      optional: true
     valibot:
+      optional: true
+    zod:
       optional: true
   languageName: unknown
   linkType: soft
@@ -4357,5 +4387,12 @@ __metadata:
     buffer-crc32: "npm:~0.2.3"
     pend: "npm:~1.2.0"
   checksum: 10c0/7b40b3dc46b95761a2a764391d257a11f494d365875af73a1b48fe16d4bd103dd178612e60168d12a0e59a8ba4f6411a15a5e8871d5a5f78255d6cc1ce39ee62
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.24.1":
+  version: 3.25.76
+  resolution: "zod@npm:3.25.76"
+  checksum: 10c0/5718ec35e3c40b600316c5b4c5e4976f7fee68151bc8f8d90ec18a469be9571f072e1bbaace10f1e85cf8892ea12d90821b200e980ab46916a6166a4260a983c
   languageName: node
   linkType: hard

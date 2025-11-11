@@ -23,6 +23,12 @@ describe("Package Exports", () => {
     expect(valibot.v).toBeDefined();
   });
 
+  test("should export typebox schema provider separately", async () => {
+    const typebox = await import("../src/typebox");
+    expect(typebox.typebox).toBeDefined();
+    expect(typebox.Type).toBeDefined();
+  });
+
   test("should export types", async () => {
     const types = await import("../src/types/index");
 
