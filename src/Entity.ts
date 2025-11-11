@@ -1,11 +1,7 @@
-import * as v from "valibot";
-import type { Reducer } from "./defineReducer";
-import type { Entity as EntityType } from "./entity-types/Entity";
 import type {
   EntityConstructor,
   EntityConstructorArgs,
-} from "./entity-types/EntityConstructor";
-import type {
+  Entity as EntityType,
   InferEntityNameFromSchema,
   InferEventBodyFromSchema,
   InferEventFromSchema,
@@ -13,8 +9,10 @@ import type {
   InferInitialEventBodyFromSchema,
   InferInitialEventNameFromSchema,
   InferStateFromSchema,
-} from "./schema-types";
-import type { ValibotEmptyObject, ValibotEventObject } from "./util-types";
+  Reducer,
+  Schema,
+} from "./types";
+import type { BaseEventType } from "./types/BaseEventType";
 
 /**
  * Creates an Entity class with event sourcing capabilities.
@@ -64,10 +62,10 @@ import type { ValibotEmptyObject, ValibotEventObject } from "./util-types";
  * // Access current state
  * console.log(user.state); // { email: "...", nickname: "...", bio: "..." }
  * ```
- *
- * @since 1.0.0
  */
-export function Entity<$$Schema>(
+export function Entity<
+  $$Schema extends Schema<string, BaseEventType, {}, string, string>,
+>(
   schema: $$Schema,
   reducer: Reducer<$$Schema>,
   options?: {
@@ -85,12 +83,7 @@ export function Entity<$$Schema>(
 
   const entityName: $$EntityName = _schema[" $$entityName"];
   const initialEventName: $$InitialEventName = _schema[" $$initialEventName"];
-  const initialEventBodySchema: ValibotEmptyObject =
-    _schema[" $$initialEventBodySchema"];
-  const eventSchema: ValibotEventObject<string, ValibotEmptyObject> =
-    _schema.event;
   const generateId: () => string = _schema[" $$generateId"];
-  const namespaceSeparator: string = _schema[" $$namespaceSeparator"];
 
   // options
   const maxQueuedEvents = options?.maxQueuedEvents ?? 10000; // Default to 10000 events
@@ -137,11 +130,17 @@ export function Entity<$$Schema>(
           type EventName = InferEventNameFromSchema<$$Schema>;
           type EventBody = InferEventBodyFromSchema<$$Schema, EventName>;
 
-          const eventName =
-            `${entityName}${namespaceSeparator}${initialEventName}` as EventName;
-          const body = v.parse(initialEventBodySchema, args.body) as EventBody;
+          const eventName = initialEventName as EventName;
+          const eventBody = args.body as EventBody;
 
-          this.dispatch(eventName, body, {
+          // 1. validate event before dispatching
+          schema.parseEventByName(
+            eventName,
+            this[" $$createEvent"](eventName, eventBody),
+          );
+
+          // 2. dispatch event
+          this.dispatch(eventName, args.body as EventBody, {
             eventId: args.eventId,
             eventCreatedAt: args.eventCreatedAt,
           });
@@ -159,14 +158,15 @@ export function Entity<$$Schema>(
           // 0. prepare
           const reducer = this[" $$reducer"];
           const prevState = this[" $$state"];
-          const EventArraySchema = v.array(eventSchema);
 
           // 1. validate events
-          const events = v.parse(EventArraySchema, args.events) as $$Event[];
+          for (const event of args.events) {
+            schema.parseEvent(event);
+          }
 
           // 2. compute state
           this.entityId = args.entityId;
-          this[" $$state"] = events.reduce(reducer, prevState);
+          this[" $$state"] = args.events.reduce(reducer, prevState);
           break;
         }
       }
@@ -267,14 +267,9 @@ export function Entity<$$Schema>(
       }
 
       // 1. create event
-      const event = v.parse(eventSchema, {
-        eventId: options?.eventId ?? generateId(),
-        eventCreatedAt: options?.eventCreatedAt ?? new Date().toISOString(),
-        eventName,
-        entityId: this.entityId,
-        entityName: this.entityName,
-        body,
-      }) as $$Event;
+      const event = schema.parseEvent(
+        this[" $$createEvent"](eventName, body, options),
+      ) as $$Event;
 
       // 2. add event to queue
       queuedEvents.push(event);
@@ -288,6 +283,24 @@ export function Entity<$$Schema>(
     // ----------------------
     " $$flush"() {
       this[" $$queuedEvents"] = [];
+    }
+
+    " $$createEvent"<EventName extends InferEventNameFromSchema<$$Schema>>(
+      eventName: EventName,
+      body: InferEventBodyFromSchema<$$Schema, EventName>,
+      options?: {
+        eventId?: string;
+        eventCreatedAt?: string;
+      },
+    ) {
+      return {
+        eventId: options?.eventId ?? generateId(),
+        eventCreatedAt: options?.eventCreatedAt ?? new Date().toISOString(),
+        eventName,
+        entityId: this.entityId,
+        entityName: this.entityName,
+        body,
+      };
     }
   };
 }

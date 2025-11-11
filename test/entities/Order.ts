@@ -1,14 +1,48 @@
 import * as v from "valibot";
-import { defineReducer } from "../../src/defineReducer";
-import { defineSchema } from "../../src/defineSchema";
-import { Entity } from "../../src/Entity";
+import { defineReducer, defineSchema, Entity } from "../../src";
+import { valibot } from "../../src/valibot";
 
 /**
  * Order entity schema definition (for e-commerce use case)
  */
 export const orderSchema = defineSchema("order", {
-  event: {
-    created: v.object({
+  schema: valibot({
+    event: {
+      created: v.object({
+        customerId: v.string(),
+        items: v.array(
+          v.object({
+            productId: v.string(),
+            quantity: v.number(),
+            price: v.number(),
+          }),
+        ),
+      }),
+      item_added: v.object({
+        productId: v.string(),
+        quantity: v.number(),
+        price: v.number(),
+      }),
+      item_removed: v.object({
+        productId: v.string(),
+      }),
+      confirmed: v.object({
+        paymentMethod: v.picklist(["card", "paypal", "bank"]),
+      }),
+      shipped: v.object({
+        trackingNumber: v.string(),
+        carrier: v.string(),
+      }),
+      delivered: v.object({
+        deliveredAt: v.string(),
+        signature: v.optional(v.string()),
+      }),
+      cancelled: v.object({
+        reason: v.string(),
+        cancelledBy: v.picklist(["customer", "system", "admin"]),
+      }),
+    },
+    state: v.object({
       customerId: v.string(),
       items: v.array(
         v.object({
@@ -17,59 +51,26 @@ export const orderSchema = defineSchema("order", {
           price: v.number(),
         }),
       ),
+      status: v.picklist([
+        "draft",
+        "confirmed",
+        "shipped",
+        "delivered",
+        "cancelled",
+      ]),
+      totalAmount: v.number(),
+      paymentMethod: v.optional(v.picklist(["card", "paypal", "bank"])),
+      shipping: v.optional(
+        v.object({
+          trackingNumber: v.string(),
+          carrier: v.string(),
+        }),
+      ),
+      deliveredAt: v.optional(v.string()),
+      cancelReason: v.optional(v.string()),
     }),
-    item_added: v.object({
-      productId: v.string(),
-      quantity: v.number(),
-      price: v.number(),
-    }),
-    item_removed: v.object({
-      productId: v.string(),
-    }),
-    confirmed: v.object({
-      paymentMethod: v.picklist(["card", "paypal", "bank"]),
-    }),
-    shipped: v.object({
-      trackingNumber: v.string(),
-      carrier: v.string(),
-    }),
-    delivered: v.object({
-      deliveredAt: v.string(),
-      signature: v.optional(v.string()),
-    }),
-    cancelled: v.object({
-      reason: v.string(),
-      cancelledBy: v.picklist(["customer", "system", "admin"]),
-    }),
-  },
-  state: v.object({
-    customerId: v.string(),
-    items: v.array(
-      v.object({
-        productId: v.string(),
-        quantity: v.number(),
-        price: v.number(),
-      }),
-    ),
-    status: v.picklist([
-      "draft",
-      "confirmed",
-      "shipped",
-      "delivered",
-      "cancelled",
-    ]),
-    totalAmount: v.number(),
-    paymentMethod: v.optional(v.picklist(["card", "paypal", "bank"])),
-    shipping: v.optional(
-      v.object({
-        trackingNumber: v.string(),
-        carrier: v.string(),
-      }),
-    ),
-    deliveredAt: v.optional(v.string()),
-    cancelReason: v.optional(v.string()),
   }),
-  initialEventName: "created",
+  initialEventName: "order:created",
 });
 
 /**

@@ -1,11 +1,9 @@
 import type {
-  EventDefinitionInput,
+  DefaultSchema,
   InferEntityNameFromSchema,
   InferEventFromSchema,
   InferStateFromSchema,
-  Schema,
-  StateDefinitionInput,
-} from "./schema-types";
+} from "./Schema";
 
 /**
  * Adapter interface for persisting and retrieving events.
@@ -183,18 +181,8 @@ import type {
  * - **Monitoring**: Track entity state evolution for debugging
  *
  * Basic adapters can ignore the state parameter - it's provided for advanced use cases.
- *
- * @since 2.0.0
  */
-export type Adapter<
-  $$Schema = Schema<
-    string,
-    EventDefinitionInput,
-    StateDefinitionInput,
-    string,
-    ":"
-  >,
-> = {
+export type Adapter<$$Schema = DefaultSchema> = {
   /**
    * Retrieves all events for a specific entity.
    *

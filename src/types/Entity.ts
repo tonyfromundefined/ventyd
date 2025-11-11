@@ -1,11 +1,11 @@
-import type { Reducer } from "../defineReducer";
+import type { Reducer } from "./Reducer";
 import type {
   InferEntityNameFromSchema,
   InferEventBodyFromSchema,
   InferEventFromSchema,
   InferEventNameFromSchema,
   InferStateFromSchema,
-} from "../schema-types";
+} from "./Schema";
 
 /**
  * Internal interface defining the structure of an Entity instance.

@@ -4,11 +4,13 @@ A TypeScript-first event sourcing library with full type safety and flexible sto
 
 ## Features
 
-- **Type-Safe Event Sourcing**: Full TypeScript support with Valibot schema validation
-- **Flexible Adapter Pattern**: Connect to any database through a simple interface
+- **Type-Safe Event Sourcing**: Full TypeScript support with comprehensive type inference
+- **Multiple Schema Libraries**: Built-in support for Valibot, with Zod, Typebox, and ArkType coming soon
+- **Flexible Storage Adapters**: Connect to any database through a simple interface
 - **Event-Driven Architecture**: Capture all state changes as immutable events
 - **Time Travel**: Reconstruct entity state at any point in history
 - **Lightweight**: Minimal dependencies, focused on core functionality
+- **Plugin System**: Extensible architecture for side effects (analytics, logging, etc.)
 
 ## Installation
 
@@ -20,40 +22,55 @@ yarn add ventyd
 pnpm add ventyd
 ```
 
+### Installing Schema Libraries
+
+Ventyd requires a schema validation library. Install the one you want to use:
+
+```bash
+# Valibot (recommended)
+npm install valibot
+
+# Coming soon: Zod, Typebox, ArkType
+```
+
 ## Quick Start
 
 ### 1. Define Your Schema
 
-Define your entity's events and state structure using Valibot schemas:
+Ventyd supports multiple schema validation libraries. Here we use Valibot (currently supported):
 
 ```typescript
-import { v, defineSchema } from 'ventyd';
+import { defineSchema } from 'ventyd';
+import { valibot, v } from 'ventyd/valibot';
 
 const userSchema = defineSchema("user", {
-  // Define all possible events
-  event: {
-    created: v.object({
+  // Use the valibot provider to define events and state
+  schema: valibot({
+    // Define all possible events
+    event: {
+      created: v.object({
+        nickname: v.string(),
+        email: v.pipe(v.string(), v.email()),
+      }),
+      profile_updated: v.object({
+        nickname: v.optional(v.string()),
+        bio: v.optional(v.string()),
+      }),
+      deleted: v.object({
+        reason: v.optional(v.string()),
+      }),
+      restored: v.object({}),
+    },
+    // Define the entity state structure
+    state: v.object({
       nickname: v.string(),
       email: v.pipe(v.string(), v.email()),
-    }),
-    profile_updated: v.object({
-      nickname: v.optional(v.string()),
       bio: v.optional(v.string()),
+      deletedAt: v.optional(v.nullable(v.string())),
     }),
-    deleted: v.object({
-      reason: v.optional(v.string()),
-    }),
-    restored: v.object({}),
-  },
-  // Define the entity state structure
-  state: v.object({
-    nickname: v.string(),
-    email: v.pipe(v.string(), v.email()),
-    bio: v.optional(v.string()),
-    deletedAt: v.optional(v.nullable(v.string())),
   }),
-  // Specify which event initializes the entity
-  initialEventName: "created",
+  // Specify which event initializes the entity (use fully-qualified name)
+  initialEventName: "user:created",
 });
 ```
 
@@ -262,9 +279,49 @@ Reducers are pure functions that compute state from events:
 - Should not have side effects
 - Handle all possible event types for the entity
 
-## Adapter Implementations
+## Supported Schema Libraries
 
-### In-Memory Adapter
+Ventyd provides official support for popular TypeScript validation libraries. Choose the one that best fits your project:
+
+### ✅ Valibot (Currently Supported)
+
+```typescript
+import { defineSchema } from 'ventyd';
+import { valibot, v } from 'ventyd/valibot';
+
+const schema = defineSchema("product", {
+  schema: valibot({
+    event: {
+      created: v.object({
+        name: v.string(),
+        price: v.pipe(v.number(), v.minValue(0))
+      }),
+      price_updated: v.object({
+        price: v.pipe(v.number(), v.minValue(0))
+      })
+    },
+    state: v.object({
+      name: v.string(),
+      price: v.number()
+    })
+  }),
+  initialEventName: "product:created"
+});
+```
+
+### 🚧 Coming Soon
+
+We're actively working on official support for these validation libraries:
+
+- **Zod** - Most popular TypeScript validation library
+- **Typebox** - JSON Schema-based validation with excellent performance
+- **ArkType** - Next-generation TypeScript validation with 1:1 syntax
+
+Want to see support for another library? [Open an issue](https://github.com/tonyfromundefined/ventyd/issues) to let us know!
+
+## Storage Adapter Implementations
+
+### In-Memory Storage Adapter
 
 Perfect for development and testing:
 
@@ -290,7 +347,7 @@ const createInMemoryAdapter = (): Adapter => {
 const adapter = createInMemoryAdapter();
 ```
 
-### MongoDB Adapter
+### MongoDB Storage Adapter
 
 For production deployments:
 

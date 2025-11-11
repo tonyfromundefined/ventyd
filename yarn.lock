@@ -4085,6 +4085,11 @@ __metadata:
     typescript: "npm:^5.9.2"
     valibot: "npm:^1.1.0"
     vitest: "npm:^3.2.4"
+  peerDependencies:
+    valibot: ^0.42.0 || ^1.0.0
+  peerDependenciesMeta:
+    valibot:
+      optional: true
   languageName: unknown
   linkType: soft
 

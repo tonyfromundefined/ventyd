@@ -1,33 +1,34 @@
 import * as v from "valibot";
-import { defineReducer } from "../../src/defineReducer";
-import { defineSchema } from "../../src/defineSchema";
-import { Entity } from "../../src/Entity";
+import { defineReducer, defineSchema, Entity } from "../../src";
+import { valibot } from "../../src/valibot";
 
 /**
  * User entity schema definition
  */
 export const userSchema = defineSchema("user", {
-  event: {
-    created: v.object({
+  schema: valibot({
+    event: {
+      created: v.object({
+        nickname: v.string(),
+        email: v.pipe(v.string(), v.email()),
+      }),
+      profile_updated: v.object({
+        nickname: v.optional(v.string()),
+        bio: v.optional(v.string()),
+      }),
+      deleted: v.object({
+        reason: v.optional(v.string()),
+      }),
+      restored: v.object({}),
+    },
+    state: v.object({
       nickname: v.string(),
       email: v.pipe(v.string(), v.email()),
-    }),
-    profile_updated: v.object({
-      nickname: v.optional(v.string()),
       bio: v.optional(v.string()),
+      deletedAt: v.nullable(v.optional(v.string())),
     }),
-    deleted: v.object({
-      reason: v.optional(v.string()),
-    }),
-    restored: v.object({}),
-  },
-  state: v.object({
-    nickname: v.string(),
-    email: v.pipe(v.string(), v.email()),
-    bio: v.optional(v.string()),
-    deletedAt: v.nullable(v.optional(v.string())),
   }),
-  initialEventName: "created",
+  initialEventName: "user:created",
 });
 
 /**

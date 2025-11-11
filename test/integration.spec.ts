@@ -2,8 +2,7 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
 
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import type { Adapter } from "../src/Adapter";
-import { createRepository } from "../src/createRepository";
+import { type Adapter, createRepository } from "../src";
 import { getAllAdapterFactories } from "./adapters";
 import { Order } from "./entities/Order";
 import { User } from "./entities/User";

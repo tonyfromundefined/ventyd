@@ -3,9 +3,8 @@
 
 import * as v from "valibot";
 import { describe, expect, test } from "vitest";
-import { defineReducer } from "../src/defineReducer";
-import { defineSchema } from "../src/defineSchema";
-import { Entity } from "../src/Entity";
+import { defineReducer, defineSchema, Entity } from "../src";
+import { valibot } from "../src/valibot"; // Use 'ventyd/valibot' in production
 import { Order } from "./entities/Order";
 import { User } from "./entities/User";
 
@@ -51,11 +50,13 @@ describe("Entity Unit Tests", () => {
       let idCounter = 1000;
 
       const schema = defineSchema("test", {
-        event: {
-          created: v.object({ value: v.string() }),
-        },
-        state: v.object({ value: v.string() }),
-        initialEventName: "created",
+        schema: valibot({
+          event: {
+            created: v.object({ value: v.string() }),
+          },
+          state: v.object({ value: v.string() }),
+        }),
+        initialEventName: "test:created",
         generateId: () => `test-${idCounter++}`,
       });
 
@@ -75,13 +76,13 @@ describe("Entity Unit Tests", () => {
         body: { value: "second" },
       });
 
-      // generateId is called twice for entity1: once for entityId, once for the initial event's eventId
+      // generateId is called 3 times per entity:
+      // 1) entityId, 2) validation eventId (discarded), 3) actual eventId
       expect(entity1.entityId).toBe("test-1000");
-      expect(entity1[" $$queuedEvents"][0]?.eventId).toBe("test-1001");
+      expect(entity1[" $$queuedEvents"][0]?.eventId).toBe("test-1002");
 
-      // generateId is called twice for entity2: once for entityId, once for the initial event's eventId
-      expect(entity2.entityId).toBe("test-1002");
-      expect(entity2[" $$queuedEvents"][0]?.eventId).toBe("test-1003");
+      expect(entity2.entityId).toBe("test-1003");
+      expect(entity2[" $$queuedEvents"][0]?.eventId).toBe("test-1005");
     });
   });
 
@@ -592,12 +593,14 @@ describe("Entity Unit Tests", () => {
   describe("Event Queue Overflow", () => {
     test("should throw error when event queue exceeds max limit", () => {
       const schema = defineSchema("test", {
-        event: {
-          created: v.object({ value: v.string() }),
-          updated: v.object({ value: v.string() }),
-        },
-        state: v.object({ value: v.string(), counter: v.number() }),
-        initialEventName: "created",
+        schema: valibot({
+          event: {
+            created: v.object({ value: v.string() }),
+            updated: v.object({ value: v.string() }),
+          },
+          state: v.object({ value: v.string(), counter: v.number() }),
+        }),
+        initialEventName: "test:created",
       });
 
       const reducer = defineReducer(schema, (prevState, event) => {
@@ -725,11 +728,13 @@ describe("Entity Unit Tests", () => {
   describe("Custom Namespace Separator", () => {
     test("should use default separator (:) when not specified", () => {
       const schema = defineSchema("product", {
-        event: {
-          created: v.object({ name: v.string() }),
-        },
-        state: v.object({ name: v.string() }),
-        initialEventName: "created",
+        schema: valibot({
+          event: {
+            created: v.object({ name: v.string() }),
+          },
+          state: v.object({ name: v.string() }),
+        }),
+        initialEventName: "product:created",
       });
 
       const reducer = defineReducer(schema, (_, event) => {
@@ -750,12 +755,14 @@ describe("Entity Unit Tests", () => {
 
     test("should use custom separator when specified", () => {
       const schema = defineSchema("product", {
-        event: {
-          created: v.object({ name: v.string() }),
-          updated: v.object({ name: v.string() }),
-        },
-        state: v.object({ name: v.string() }),
-        initialEventName: "created",
+        schema: valibot({
+          event: {
+            created: v.object({ name: v.string() }),
+            updated: v.object({ name: v.string() }),
+          },
+          state: v.object({ name: v.string() }),
+        }),
+        initialEventName: "product/created",
         namespaceSeparator: "/",
       });
 
@@ -787,18 +794,20 @@ describe("Entity Unit Tests", () => {
 
     test("should use separator consistently across all events", () => {
       const schema = defineSchema("order", {
-        event: {
-          created: v.object({ total: v.number() }),
-          confirmed: v.object({}),
-          shipped: v.object({ trackingNumber: v.string() }),
-          delivered: v.object({}),
-        },
-        state: v.object({
-          total: v.number(),
-          status: v.string(),
-          trackingNumber: v.optional(v.string()),
+        schema: valibot({
+          event: {
+            created: v.object({ total: v.number() }),
+            confirmed: v.object({}),
+            shipped: v.object({ trackingNumber: v.string() }),
+            delivered: v.object({}),
+          },
+          state: v.object({
+            total: v.number(),
+            status: v.string(),
+            trackingNumber: v.optional(v.string()),
+          }),
         }),
-        initialEventName: "created",
+        initialEventName: "order.created",
         namespaceSeparator: ".",
       });
 

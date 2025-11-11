@@ -1,11 +1,9 @@
 import type {
-  EventDefinitionInput,
+  DefaultSchema,
   InferEntityNameFromSchema,
   InferEventFromSchema,
   InferStateFromSchema,
-  Schema,
-  StateDefinitionInput,
-} from "./schema-types";
+} from "./Schema";
 
 /**
  * Plugin interface for extending repository behavior with side effects.
@@ -257,18 +255,8 @@ import type {
  *   }
  * });
  * ```
- *
- * @since 2.0.0
  */
-export type Plugin<
-  $$Schema = Schema<
-    string,
-    EventDefinitionInput,
-    StateDefinitionInput,
-    string,
-    ":"
-  >,
-> = {
+export type Plugin<$$Schema = DefaultSchema> = {
   /**
    * Hook called after events are successfully committed to storage.
    *

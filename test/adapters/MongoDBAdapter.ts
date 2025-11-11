@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: for testing */
 
 import type { Collection, Db } from "mongodb";
-import type { Adapter } from "../../src/Adapter";
+import type { Adapter } from "../../src";
 
 type BaseEvent = {
   eventId: string;
@@ -46,6 +46,8 @@ export const createMongoDBAdapter = (db: Db): MongoDBAdapter => {
      * Commits new events to the adapter.
      */
     async commitEvents(args: {
+      entityName: string;
+      entityId: string;
       events: BaseEvent[];
       state: any;
     }): Promise<void> {
