@@ -11,7 +11,7 @@ export function mutation<
   fn: (dispatch: $$Entity[" $$dispatch"], ...args: $$Args) => $$Return,
 ): MutationMethod<(...args: $$Args) => $$Return> {
   const f: MutationMethod<(...args: $$Args) => $$Return> = (...args) => {
-    return fn(self[" $$dispatch"], ...args);
+    return fn(self[" $$dispatch"].bind(self), ...args);
   };
   f.mutation = true;
 

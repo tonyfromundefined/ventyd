@@ -306,7 +306,9 @@ describe("Entity Unit Tests", () => {
       }).toThrow("Entity is readonly");
 
       expect(() => {
-        loadedUser." $$dispatch"("user:profile_updated", { bio: "Direct dispatch" });
+        loadedUser[" $$dispatch"]("user:profile_updated", {
+          bio: "Direct dispatch",
+        });
       }).toThrow("Entity is readonly");
     });
 
@@ -343,7 +345,7 @@ describe("Entity Unit Tests", () => {
       }).toThrow("Entity is readonly");
 
       expect(() => {
-        loadedOrder." $$dispatch"("order:shipped", {
+        loadedOrder[" $$dispatch"]("order:shipped", {
           trackingNumber: "TRACK456",
           carrier: "UPS",
         });
@@ -624,14 +626,14 @@ describe("Entity Unit Tests", () => {
       });
 
       // First event is the initial event, so we can add 4 more
-      entity." $$dispatch"("test:updated", { value: "update1" });
-      entity." $$dispatch"("test:updated", { value: "update2" });
-      entity." $$dispatch"("test:updated", { value: "update3" });
-      entity." $$dispatch"("test:updated", { value: "update4" });
+      entity[" $$dispatch"]("test:updated", { value: "update1" });
+      entity[" $$dispatch"]("test:updated", { value: "update2" });
+      entity[" $$dispatch"]("test:updated", { value: "update3" });
+      entity[" $$dispatch"]("test:updated", { value: "update4" });
 
       // This should throw as it exceeds the limit of 5
       expect(() => {
-        entity." $$dispatch"("test:updated", { value: "update5" });
+        entity[" $$dispatch"]("test:updated", { value: "update5" });
       }).toThrow("Event queue overflow: maximum 5 uncommitted events exceeded");
     });
 
@@ -787,7 +789,7 @@ describe("Entity Unit Tests", () => {
 
       // Dispatch another event - runtime uses custom separator
       // Type assertion needed because type system uses ":"
-      product." $$dispatch"("product/updated", { name: "Updated Product" });
+      product[" $$dispatch"]("product/updated", { name: "Updated Product" });
       const updateEvent = product[" $$queuedEvents"][1];
       expect(updateEvent?.eventName).toBe("product/updated");
     });
@@ -837,9 +839,9 @@ describe("Entity Unit Tests", () => {
       });
 
       // Runtime uses custom separator, type assertions needed
-      order." $$dispatch"("order.confirmed", {});
-      order." $$dispatch"("order.shipped", { trackingNumber: "TRACK123" });
-      order." $$dispatch"("order.delivered", {});
+      order[" $$dispatch"]("order.confirmed", {});
+      order[" $$dispatch"]("order.shipped", { trackingNumber: "TRACK123" });
+      order[" $$dispatch"]("order.delivered", {});
 
       const eventNames = order[" $$queuedEvents"].map((e) => e?.eventName);
       expect(eventNames).toEqual([
