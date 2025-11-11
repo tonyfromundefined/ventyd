@@ -28,12 +28,15 @@ pnpm add ventyd
 Ventyd is built on the [Standard Schema](https://standardschema.dev) specification. You can use any Standard Schema-compliant validation library:
 
 ```bash
-# Valibot (recommended, has built-in helper)
+# Valibot (has built-in helper)
 npm install valibot
+
+# TypeBox (has built-in helper)
+npm install @sinclair/typebox @sinclair/typemap
 
 # Or use any Standard Schema-compliant library directly
 npm install @standard-schema/spec
-npm install zod  # or arktype, typebox, etc.
+npm install zod  # or arktype, etc.
 ```
 
 ## Quick Start
@@ -323,9 +326,9 @@ Any library that implements the Standard Schema specification works with Ventyd:
 | Library | Status | Usage |
 |---------|--------|-------|
 | **[Valibot](https://valibot.dev)** | ✅ Official Helper | `ventyd/valibot` |
+| **[TypeBox](https://github.com/sinclairzx81/typebox)** | ✅ Official Helper | `ventyd/typebox` |
 | **[Zod](https://zod.dev)** | 🔜 Coming Soon | Use `standard()` for now |
 | **[ArkType](https://arktype.io)** | 🔜 Coming Soon | Use `standard()` for now |
-| **[Typebox](https://github.com/sinclairzx81/typebox)** | 🔜 Coming Soon | Use `standard()` for now |
 
 **Note:** Any Standard Schema-compliant library can be used with the `standard()` provider. Official helpers provide automatic event namespacing and better ergonomics.
 
@@ -357,7 +360,7 @@ const productSchema = defineSchema("product", {
 });
 ```
 
-**Custom namespace separator**
+**Custom namespace separator:**
 
 The default separator between entity name and event name is `":"` (e.g., `user:created`). You can customize it:
 
@@ -369,6 +372,85 @@ const productSchema = defineSchema("product", {
       updated: v.object({ price: v.number() })
     },
     state: v.object({ name: v.string(), price: v.number() }),
+    namespaceSeparator: "/" // Events become "product/created", "product/updated"
+  }),
+  initialEventName: "product/created" // Must match the separator
+});
+```
+
+### Using TypeBox
+
+Ventyd provides an official helper for TypeBox that automatically handles event namespacing and metadata:
+
+```typescript
+import { defineSchema } from 'ventyd';
+import { typebox, Type } from 'ventyd/typebox';
+
+const productSchema = defineSchema("product", {
+  schema: typebox({
+    event: {
+      created: Type.Object({
+        name: Type.String(),
+        price: Type.Number({ minimum: 0 })
+      }),
+      price_updated: Type.Object({
+        price: Type.Number({ minimum: 0 })
+      })
+    },
+    state: Type.Object({
+      name: Type.String(),
+      price: Type.Number()
+    })
+  }),
+  initialEventName: "product:created"
+});
+```
+
+**TypeBox features you can use:**
+
+TypeBox provides powerful schema validation with JSON Schema support:
+
+```typescript
+const userSchema = defineSchema("user", {
+  schema: typebox({
+    event: {
+      created: Type.Object({
+        email: Type.String({ format: 'email', maxLength: 255 }),
+        age: Type.Number({ minimum: 13, maximum: 120 }),
+        role: Type.Union([
+          Type.Literal('user'),
+          Type.Literal('admin')
+        ])
+      }),
+      profile_updated: Type.Object({
+        bio: Type.Optional(Type.String({ maxLength: 500 })),
+        avatar: Type.Optional(Type.String({ format: 'uri' }))
+      })
+    },
+    state: Type.Object({
+      email: Type.String(),
+      age: Type.Number(),
+      role: Type.String(),
+      bio: Type.Optional(Type.String()),
+      avatar: Type.Optional(Type.String())
+    })
+  }),
+  initialEventName: "user:created"
+});
+```
+
+**Custom namespace separator:**
+
+Just like Valibot, you can customize the namespace separator:
+
+```typescript
+const productSchema = defineSchema("product", {
+  schema: typebox({
+    event: {
+      created: Type.Object({ name: Type.String() }),
+      updated: Type.Object({ price: Type.Number() })
+    },
+    state: Type.Object({ name: Type.String(), price: Type.Number() }),
     namespaceSeparator: "/" // Events become "product/created", "product/updated"
   }),
   initialEventName: "product/created" // Must match the separator
