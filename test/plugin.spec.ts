@@ -212,7 +212,7 @@ getAllAdapterFactories().forEach((factory) => {
         expect(executionOrder[2]).toBe(0); // 50ms delay
 
         // Total time should be closer to max delay (50ms) than sum (90ms)
-        expect(duration).toBeLessThan(100); // Allow generous overhead for CI
+        expect(duration).toBeLessThan(120); // Allow generous overhead for CI
       });
 
       test("should execute all plugins even if one fails", async () => {

@@ -118,10 +118,10 @@ const userReducer = defineReducer(userSchema, (prevState, event) => {
 
 ### 3. Create Your Entity Class
 
-Extend the Entity base class and add business logic:
+Extend the Entity base class and add business logic using the `mutation()` helper:
 
 ```typescript
-import { Entity } from 'ventyd';
+import { Entity, mutation } from 'ventyd';
 
 class User extends Entity(userSchema, userReducer) {
   // Getters for convenient access
@@ -133,27 +133,27 @@ class User extends Entity(userSchema, userReducer) {
     return this.state.deletedAt !== null;
   }
 
-  // Business methods with validation
-  updateProfile(updates: { nickname?: string; bio?: string }) {
+  // Business methods with validation using mutation helper
+  updateProfile = mutation(this, (dispatch, updates: { nickname?: string; bio?: string }) => {
     if (this.isDeleted) {
       throw new Error("Cannot update profile of deleted user");
     }
-    this.dispatch("user:profile_updated", updates);
-  }
+    dispatch("user:profile_updated", updates);
+  });
 
-  delete(reason?: string) {
+  delete = mutation(this, (dispatch, reason?: string) => {
     if (this.isDeleted) {
       throw new Error("User is already deleted");
     }
-    this.dispatch("user:deleted", { reason });
-  }
+    dispatch("user:deleted", { reason });
+  });
 
-  restore() {
+  restore = mutation(this, (dispatch) => {
     if (!this.isDeleted) {
       throw new Error("User is not deleted");
     }
-    this.dispatch("user:restored", {});
-  }
+    dispatch("user:restored", {});
+  });
 }
 ```
 
@@ -278,6 +278,55 @@ Reducers are pure functions that compute state from events:
 - Must be deterministic (same inputs always produce same output)
 - Should not have side effects
 - Handle all possible event types for the entity
+
+### Mutations
+
+Mutations are entity methods that dispatch events to change state. Ventyd provides the `mutation()` helper to create mutation methods:
+
+```typescript
+class User extends Entity(userSchema, userReducer) {
+  updateProfile = mutation(this, (dispatch, bio: string) => {
+    if (this.isDeleted) {
+      throw new Error("Cannot update deleted user");
+    }
+    dispatch("user:profile_updated", { bio });
+  });
+}
+```
+
+**Key features:**
+- Automatically binds dispatch to the entity instance
+- Maintains access to `this` for entity state and getters
+- Marks methods as mutations for type-level tracking
+- Enables readonly entity enforcement
+
+### Read-only Entities (CQRS)
+
+Entities loaded from existing state (via `Entity.load()`) are read-only and cannot dispatch new events:
+
+```typescript
+// Created entities are fully mutable
+const user = User.create({
+  body: { nickname: "John", email: "john@example.com" }
+});
+user.updateProfile("Software Engineer"); // ✅ Works
+
+// Loaded entities are read-only
+const loadedUser = User.load({
+  entityId: "user-123",
+  state: { nickname: "John", email: "john@example.com" }
+});
+loadedUser.updateProfile("..."); // ❌ Type error & runtime error
+```
+
+This enforces the **Command-Query Responsibility Segregation (CQRS)** pattern:
+- **Commands** (write operations): Use entities created or hydrated from events
+- **Queries** (read operations): Use entities loaded from current state snapshots
+
+**Benefits:**
+- Prevents accidental mutations without event history
+- Separates write and read models
+- Ensures event sourcing integrity
 
 ## Supported Schema Libraries
 
@@ -645,16 +694,18 @@ dispatch("order:shipping_address_updated", { address });
 dispatch("order:updated", { items, address, status, ... });
 ```
 
-### 3. Error Handling
+### 3. Mutation Methods
 
-- Validate business rules before dispatching events
-- Use domain-specific exceptions
-- Never modify state directly
+- Always use the `mutation()` helper for methods that dispatch events
+- Validate business rules before dispatching
+- Access entity state via `this` for validation logic
 
 ```typescript
+import { Entity, mutation } from 'ventyd';
+
 class Order extends Entity(orderSchema, orderReducer) {
-  ship(trackingNumber: string) {
-    // Validate before dispatching
+  ship = mutation(this, (dispatch, trackingNumber: string) => {
+    // Validate using entity state via this
     if (this.state.status !== "confirmed") {
       throw new OrderNotConfirmedError(
         `Order ${this.entityId} must be confirmed before shipping`
@@ -668,10 +719,17 @@ class Order extends Entity(orderSchema, orderReducer) {
     }
 
     // Safe to dispatch after validation
-    this.dispatch("order:shipped", { trackingNumber });
-  }
+    dispatch("order:shipped", { trackingNumber });
+  });
 }
 ```
+
+### 4. Error Handling
+
+- Validate business rules before dispatching events
+- Use domain-specific exceptions
+- Never modify state directly
+- Mutation methods automatically enforce readonly constraints
 
 ## License
 
