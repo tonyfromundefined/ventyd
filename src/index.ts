@@ -5,6 +5,7 @@ export { Entity } from "./Entity";
 export { mutation } from "./mutation";
 export type {
   Adapter,
+  BaseEventType,
   EntityConstructor,
   EntityConstructorArgs,
   InferEntityNameFromSchema,
