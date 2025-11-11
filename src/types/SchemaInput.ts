@@ -23,11 +23,7 @@ export type SchemaInput<
   $$EntityName,
   $$EventType extends BaseEventType,
   $$StateType,
-  $$NamespaceSeparator extends string = ":",
-> = (context: {
-  entityName: $$EntityName;
-  namespaceSeparator: $$NamespaceSeparator;
-}) => {
+> = (context: { entityName: $$EntityName }) => {
   parseEvent(input: unknown): $$EventType;
   parseEventByName<K extends $$EventType["eventName"]>(
     eventName: K,

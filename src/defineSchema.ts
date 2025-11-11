@@ -94,34 +94,18 @@ export function defineSchema<
   $$EventType extends BaseEventType,
   $$StateType,
   $$InitialEventName extends $$EventType["eventName"],
-  $$NamespaceSeparator extends string = ":",
 >(
   entityName: $$EntityName,
   options: {
-    schema: SchemaInput<
-      $$EntityName,
-      $$EventType,
-      $$StateType,
-      $$NamespaceSeparator
-    >;
+    schema: SchemaInput<$$EntityName, $$EventType, $$StateType>;
     initialEventName: $$InitialEventName;
     generateId?: () => string;
-    namespaceSeparator?: $$NamespaceSeparator;
   },
-): Schema<
-  $$EntityName,
-  $$EventType,
-  $$StateType,
-  $$InitialEventName,
-  $$NamespaceSeparator
-> {
-  const namespaceSeparator =
-    options.namespaceSeparator ?? (":" as $$NamespaceSeparator);
+): Schema<$$EntityName, $$EventType, $$StateType, $$InitialEventName> {
   const generateId = options.generateId ?? defaultGenerateId;
 
   const { parseEvent, parseEventByName, parseState } = options.schema({
     entityName,
-    namespaceSeparator,
   });
 
   return {
@@ -131,6 +115,5 @@ export function defineSchema<
     " $$entityName": entityName,
     " $$initialEventName": options.initialEventName,
     " $$generateId": generateId,
-    " $$namespaceSeparator": namespaceSeparator,
   };
 }

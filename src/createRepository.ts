@@ -2,15 +2,14 @@ import sortBy from "just-sort-by";
 import type {
   Adapter,
   ConstructorReturnType,
+  DefaultSchema,
   Entity,
   EntityConstructor,
   InferEntityNameFromSchema,
   InferSchemaFromEntityConstructor,
   Plugin,
   Repository,
-  Schema,
 } from "./types";
-import type { BaseEventType } from "./types/BaseEventType";
 
 /**
  * Creates a repository instance for managing entity persistence.
@@ -138,13 +137,7 @@ export function createRepository<
   type $$EntityName = InferEntityNameFromSchema<$$Schema>;
   type $$ExtendedEntityType = ConstructorReturnType<$$EntityConstructor>;
 
-  const _schema = Entity.schema as Schema<
-    string,
-    BaseEventType,
-    {},
-    string,
-    string
-  >;
+  const _schema = Entity.schema as DefaultSchema;
   const entityName = _schema[" $$entityName"] as $$EntityName;
 
   return {

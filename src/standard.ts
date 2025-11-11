@@ -4,18 +4,16 @@ import type { BaseEventType, SchemaInput, ValueOf } from "./types";
 export function standard<
   $$EntityName extends string,
   $$EventDefinition extends {
-    [eventName: string]: StandardSchemaV1<BaseEventType, BaseEventType>;
+    [eventName: string]: StandardSchemaV1<unknown, BaseEventType>;
   },
   $$StateDefinition extends StandardSchemaV1,
-  $$NamespaceSeparator extends string = ":",
 >(args: {
   event: $$EventDefinition;
   state: $$StateDefinition;
 }): SchemaInput<
   $$EntityName,
   StandardSchemaV1.InferOutput<ValueOf<$$EventDefinition>>,
-  StandardSchemaV1.InferOutput<$$StateDefinition>,
-  $$NamespaceSeparator
+  StandardSchemaV1.InferOutput<$$StateDefinition>
 > {
   type $$EventType = StandardSchemaV1.InferOutput<ValueOf<$$EventDefinition>>;
   return (context) => {
