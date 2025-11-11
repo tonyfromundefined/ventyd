@@ -4113,6 +4113,7 @@ __metadata:
     typescript: "npm:^5.9.2"
     valibot: "npm:^1.1.0"
     vitest: "npm:^3.2.4"
+    zod: "npm:^3.24.1"
   peerDependencies:
     "@sinclair/typebox": ^0.34.41
     "@sinclair/typemap": ^0.10.1
@@ -4383,5 +4384,12 @@ __metadata:
     buffer-crc32: "npm:~0.2.3"
     pend: "npm:~1.2.0"
   checksum: 10c0/7b40b3dc46b95761a2a764391d257a11f494d365875af73a1b48fe16d4bd103dd178612e60168d12a0e59a8ba4f6411a15a5e8871d5a5f78255d6cc1ce39ee62
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.24.1":
+  version: 3.25.76
+  resolution: "zod@npm:3.25.76"
+  checksum: 10c0/5718ec35e3c40b600316c5b4c5e4976f7fee68151bc8f8d90ec18a469be9571f072e1bbaace10f1e85cf8892ea12d90821b200e980ab46916a6166a4260a983c
   languageName: node
   linkType: hard
