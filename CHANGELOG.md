@@ -1,5 +1,11 @@
 # ventyd
 
+## 1.8.0
+
+### Minor Changes
+
+- cedfe6b: feat: add standard schema support
+
 ## 1.7.1
 
 ### Patch Changes
