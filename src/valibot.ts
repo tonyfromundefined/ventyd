@@ -5,9 +5,8 @@
 
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import * as v from "valibot";
-import type { BaseEventType } from "../dist";
 import { standard } from "./standard";
-import type { SchemaInput, ValueOf } from "./types";
+import type { BaseEventType, SchemaInput, ValueOf } from "./types";
 
 type ValibotEmptyObject = v.ObjectSchema<v.ObjectEntries, undefined>;
 
@@ -24,6 +23,7 @@ type ValibotEmptyObject = v.ObjectSchema<v.ObjectEntries, undefined>;
  * @param args - Schema definition
  * @param args.event - Map of event names to Valibot object schemas defining event payloads
  * @param args.state - Valibot object schema defining the entity state structure
+ * @param args.namespaceSeparator - Optional separator between entity name and event name (default: ":")
  *
  * @returns A schema provider function compatible with Ventyd's `SchemaInput` interface
  *
