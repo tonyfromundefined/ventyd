@@ -1,4 +1,5 @@
 import type { Entity } from "./Entity";
+import type { ReadonlyEntity } from "./ReadonlyEntity";
 import type {
   InferEventFromSchema,
   InferInitialEventBodyFromSchema,
@@ -72,7 +73,7 @@ export interface EntityConstructor<$$Schema> {
       entityId: string;
       state: InferStateFromSchema<$$Schema>;
     },
-  ) => T;
+  ) => ReadonlyEntity<T>;
 
   /**
    * @internal

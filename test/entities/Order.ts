@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { defineReducer, defineSchema, Entity } from "../../src";
+import { defineReducer, defineSchema, Entity, mutation } from "../../src";
 import { valibot } from "../../src/valibot";
 
 /**
@@ -216,15 +216,18 @@ export class Order extends Entity(orderSchema, orderReducer) {
   // ----------------------
   // Business methods
   // ----------------------
-  addItem(productId: string, quantity: number, price: number) {
-    if (!this.canModifyItems) {
-      throw new Error(`Cannot modify items in ${this.state.status} status`);
-    }
+  addItem = mutation(
+    this,
+    (dispatch, productId: string, quantity: number, price: number) => {
+      if (!this.canModifyItems) {
+        throw new Error(`Cannot modify items in ${this.state.status} status`);
+      }
 
-    this.dispatch("order:item_added", { productId, quantity, price });
-  }
+      dispatch("order:item_added", { productId, quantity, price });
+    },
+  );
 
-  removeItem(productId: string) {
+  removeItem = mutation(this, (dispatch, productId: string) => {
     if (!this.canModifyItems) {
       throw new Error(`Cannot modify items in ${this.state.status} status`);
     }
@@ -234,48 +237,58 @@ export class Order extends Entity(orderSchema, orderReducer) {
       throw new Error(`Item ${productId} not found in order`);
     }
 
-    this.dispatch("order:item_removed", { productId });
-  }
+    dispatch("order:item_removed", { productId });
+  });
 
-  confirm(paymentMethod: "card" | "paypal" | "bank") {
-    if (this.state.status !== "draft") {
-      throw new Error(`Cannot confirm order in ${this.state.status} status`);
-    }
+  confirm = mutation(
+    this,
+    (dispatch, paymentMethod: "card" | "paypal" | "bank") => {
+      if (this.state.status !== "draft") {
+        throw new Error(`Cannot confirm order in ${this.state.status} status`);
+      }
 
-    if (this.state.items.length === 0) {
-      throw new Error("Cannot confirm order with no items");
-    }
+      if (this.state.items.length === 0) {
+        throw new Error("Cannot confirm order with no items");
+      }
 
-    this.dispatch("order:confirmed", { paymentMethod });
-  }
+      dispatch("order:confirmed", { paymentMethod });
+    },
+  );
 
-  ship(trackingNumber: string, carrier: string) {
+  ship = mutation(this, (dispatch, trackingNumber: string, carrier: string) => {
     if (!this.canShip) {
       throw new Error(`Cannot ship order in ${this.state.status} status`);
     }
 
-    this.dispatch("order:shipped", { trackingNumber, carrier });
-  }
+    dispatch("order:shipped", { trackingNumber, carrier });
+  });
 
-  markAsDelivered(signature?: string) {
+  markAsDelivered = mutation(this, (dispatch, signature?: string) => {
     if (!this.canDeliver) {
       throw new Error(`Cannot deliver order in ${this.state.status} status`);
     }
 
-    this.dispatch("order:delivered", {
+    dispatch("order:delivered", {
       deliveredAt: new Date().toISOString(),
       signature,
     });
-  }
+  });
 
-  cancel(reason: string, cancelledBy: "customer" | "system" | "admin") {
-    if (
-      this.state.status === "delivered" ||
-      this.state.status === "cancelled"
-    ) {
-      throw new Error(`Cannot cancel order in ${this.state.status} status`);
-    }
+  cancel = mutation(
+    this,
+    (
+      dispatch,
+      reason: string,
+      cancelledBy: "customer" | "system" | "admin",
+    ) => {
+      if (
+        this.state.status === "delivered" ||
+        this.state.status === "cancelled"
+      ) {
+        throw new Error(`Cannot cancel order in ${this.state.status} status`);
+      }
 
-    this.dispatch("order:cancelled", { reason, cancelledBy });
-  }
+      dispatch("order:cancelled", { reason, cancelledBy });
+    },
+  );
 }
