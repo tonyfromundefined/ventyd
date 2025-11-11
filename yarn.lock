@@ -4118,12 +4118,15 @@ __metadata:
     "@sinclair/typebox": ^0.34.41
     "@sinclair/typemap": ^0.10.1
     valibot: ^1.0.0
+    zod: ">=3.24.1"
   peerDependenciesMeta:
     "@sinclair/typebox":
       optional: true
     "@sinclair/typemap":
       optional: true
     valibot:
+      optional: true
+    zod:
       optional: true
   languageName: unknown
   linkType: soft
