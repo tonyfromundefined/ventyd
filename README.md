@@ -6,7 +6,7 @@ A TypeScript-first event sourcing library with full type safety and flexible sto
 
 - **Type-Safe Event Sourcing**: Full TypeScript support with comprehensive type inference
 - **Standard Schema Support**: Built on [Standard Schema](https://standardschema.dev) specification for maximum flexibility
-- **Multiple Validation Libraries**: Official support for Valibot, with easy integration for Zod, Typebox, ArkType, and more
+- **Multiple Validation Libraries**: Official integrations for Valibot, Zod, ArkType, and TypeBox - use your favorite validation library
 - **Flexible Storage Adapters**: Connect to any database through a simple interface
 - **Event-Driven Architecture**: Capture all state changes as immutable events
 - **Time Travel**: Reconstruct entity state at any point in history
@@ -21,19 +21,24 @@ $ yarn add ventyd
 
 ### Installing Validation Libraries
 
-Ventyd is built on the [Standard Schema](https://standardschema.dev) specification. You can use any Standard Schema-compliant validation library:
+Ventyd is built on the [Standard Schema](https://standardschema.dev) specification. Choose your preferred validation library:
 
 ```bash
-# Valibot (has built-in helper)
+# Valibot (recommended)
 $ yarn add valibot
 
-# TypeBox (has built-in helper)
-# Note: `@sinclair/typemap` depends on `zod` for Standard Schema conversion
-$ yarn add @sinclair/typebox @sinclair/typemap zod
+# Zod
+$ yarn add zod
+
+# ArkType
+$ yarn add arktype
+
+# TypeBox
+# Note: @sinclair/typemap provides Standard Schema support
+$ yarn add @sinclair/typebox @sinclair/typemap
 
 # Or use any Standard Schema-compliant library directly
 $ yarn add @standard-schema/spec
-$ yarn add zod  # or arktype, etc.
 ```
 
 ## Quick Start
@@ -322,12 +327,13 @@ Any library that implements the Standard Schema specification works with Ventyd:
 
 | Library | Status | Usage |
 |---------|--------|-------|
-| **[Valibot](https://valibot.dev)** | ✅ Official Helper | `ventyd/valibot` |
-| **[TypeBox](https://github.com/sinclairzx81/typebox)** | ✅ Official Helper | `ventyd/typebox` |
-| **[Zod](https://zod.dev)** | 🔜 Coming Soon | Use `standard()` for now |
-| **[ArkType](https://arktype.io)** | 🔜 Coming Soon | Use `standard()` for now |
+| **[Valibot](https://valibot.dev)** | ✅ Official Integration | `ventyd/valibot` |
+| **[Zod](https://zod.dev)** | ✅ Official Integration | `ventyd/zod` |
+| **[ArkType](https://arktype.io)** | ✅ Official Integration | `ventyd/arktype` |
+| **[TypeBox](https://github.com/sinclairzx81/typebox)** | ✅ Official Integration | `ventyd/typebox` |
+| **Others** | ✅ Via Standard Schema | `ventyd/standard` |
 
-**Note:** Any Standard Schema-compliant library can be used with the `standard()` provider. Official helpers provide automatic event namespacing and better ergonomics.
+**Note:** Official integrations provide automatic event namespacing and better ergonomics. Any Standard Schema-compliant library can also be used directly with the `standard()` provider.
 
 ### Using Valibot (Recommended)
 
@@ -454,9 +460,183 @@ const productSchema = defineSchema("product", {
 });
 ```
 
+### Using Zod
+
+Ventyd provides an official integration for Zod that automatically handles event namespacing and metadata. Zod natively implements Standard Schema V1:
+
+```typescript
+import { defineSchema } from 'ventyd';
+import { zod, z } from 'ventyd/zod';
+
+const customerSchema = defineSchema("customer", {
+  schema: zod({
+    event: {
+      created: z.object({
+        name: z.string().min(1).max(100),
+        email: z.string().email(),
+        phone: z.string().optional()
+      }),
+      contact_updated: z.object({
+        email: z.string().email().optional(),
+        phone: z.string().optional()
+      }),
+      upgraded: z.object({
+        tier: z.enum(["bronze", "silver", "gold", "platinum"])
+      })
+    },
+    state: z.object({
+      name: z.string(),
+      email: z.string().email(),
+      phone: z.string().optional(),
+      tier: z.enum(["bronze", "silver", "gold", "platinum"]),
+      isActive: z.boolean()
+    })
+  }),
+  initialEventName: "customer:created"
+});
+```
+
+**Zod features you can use:**
+
+Zod provides powerful schema validation with a fluent API:
+
+```typescript
+const orderSchema = defineSchema("order", {
+  schema: zod({
+    event: {
+      created: z.object({
+        email: z.string().email().max(255),
+        total: z.number().positive(),
+        items: z.array(z.object({
+          productId: z.string().uuid(),
+          quantity: z.number().int().positive(),
+          price: z.number().nonnegative()
+        })).min(1),
+        status: z.enum(["pending", "confirmed", "shipped"])
+      }),
+      status_updated: z.object({
+        status: z.enum(["pending", "confirmed", "shipped", "delivered"]),
+        note: z.string().optional()
+      })
+    },
+    state: z.object({
+      email: z.string(),
+      total: z.number(),
+      items: z.array(z.object({
+        productId: z.string(),
+        quantity: z.number(),
+        price: z.number()
+      })),
+      status: z.string()
+    })
+  }),
+  initialEventName: "order:created"
+});
+```
+
+**Custom namespace separator:**
+
+```typescript
+const productSchema = defineSchema("product", {
+  schema: zod({
+    event: {
+      created: z.object({ name: z.string() }),
+      updated: z.object({ price: z.number() })
+    },
+    state: z.object({ name: z.string(), price: z.number() }),
+    namespaceSeparator: "/" // Events become "product/created", "product/updated"
+  }),
+  initialEventName: "product/created"
+});
+```
+
+### Using ArkType
+
+Ventyd provides an official integration for ArkType that automatically handles event namespacing and metadata. ArkType natively implements Standard Schema V1:
+
+```typescript
+import { defineSchema } from 'ventyd';
+import { arktype, type } from 'ventyd/arktype';
+
+const inventorySchema = defineSchema("inventory", {
+  schema: arktype({
+    event: {
+      created: type({
+        itemName: "string",
+        sku: "string",
+        quantity: "number>=0",
+        location: "string"
+      }),
+      quantity_adjusted: type({
+        quantity: "number",
+        reason: "string"
+      }),
+      location_changed: type({
+        oldLocation: "string",
+        newLocation: "string"
+      })
+    },
+    state: type({
+      itemName: "string",
+      sku: "string",
+      quantity: "number",
+      location: "string",
+      isDepleted: "boolean"
+    })
+  }),
+  initialEventName: "inventory:created"
+});
+```
+
+**ArkType features you can use:**
+
+ArkType provides powerful type-safe validation with an elegant syntax:
+
+```typescript
+const userSchema = defineSchema("user", {
+  schema: arktype({
+    event: {
+      created: type({
+        email: "string.email",
+        age: "number>=13<=120",
+        role: "'user'|'admin'|'moderator'"
+      }),
+      profile_updated: type({
+        "bio?": "string<=500",
+        "avatar?": "string.url"
+      })
+    },
+    state: type({
+      email: "string.email",
+      age: "number",
+      role: "string",
+      "bio?": "string",
+      "avatar?": "string"
+    })
+  }),
+  initialEventName: "user:created"
+});
+```
+
+**Custom namespace separator:**
+
+```typescript
+const productSchema = defineSchema("product", {
+  schema: arktype({
+    event: {
+      created: type({ name: "string" }),
+      updated: type({ price: "number" })
+    },
+    state: type({ name: "string", price: "number" }),
+    namespaceSeparator: "/" // Events become "product/created", "product/updated"
+  }),
+  initialEventName: "product/created"
+});
+```
+
 ### Using Other Libraries (Standard Schema Provider)
 
-For libraries without an official helper, use the `standard()` provider directly. This works with any Standard Schema-compliant library (Zod, ArkType, Typebox, etc.):
+For libraries without an official integration, use the `standard()` provider directly. This works with any Standard Schema-compliant library:
 
 ```typescript
 import { defineSchema } from 'ventyd';
@@ -496,9 +676,9 @@ const userSchema = defineSchema("user", {
 });
 ```
 
-**Important:** When using `standard()` directly, you must manually include all event metadata fields (`eventId`, `eventName`, `eventCreatedAt`, `entityName`, `entityId`, `body`) in your event schemas. Official helpers like `valibot()` add these automatically.
+**Important:** When using `standard()` directly, you must manually include all event metadata fields (`eventId`, `eventName`, `eventCreatedAt`, `entityName`, `entityId`, `body`) in your event schemas. Official integrations like `valibot()`, `zod()`, `arktype()`, and `typebox()` add these automatically.
 
-Want an official helper for your favorite library? [Open an issue](https://github.com/tonyfromundefined/ventyd/issues) to let us know!
+Want an official integration for your favorite library? [Open an issue](https://github.com/tonyfromundefined/ventyd/issues) to let us know!
 
 ## Storage Adapters
 
