@@ -1,4 +1,5 @@
 import type {
+  DefaultSchema,
   EntityConstructor,
   EntityConstructorArgs,
   Entity as EntityType,
@@ -10,9 +11,7 @@ import type {
   InferInitialEventNameFromSchema,
   InferStateFromSchema,
   Reducer,
-  Schema,
 } from "./types";
-import type { BaseEventType } from "./types/BaseEventType";
 import type { ReadonlyEntity } from "./types/ReadonlyEntity";
 
 /**
@@ -64,9 +63,7 @@ import type { ReadonlyEntity } from "./types/ReadonlyEntity";
  * console.log(user.state); // { email: "...", nickname: "...", bio: "..." }
  * ```
  */
-export function Entity<
-  $$Schema extends Schema<string, BaseEventType, {}, string, string>,
->(
+export function Entity<$$Schema extends DefaultSchema>(
   schema: $$Schema,
   reducer: Reducer<$$Schema>,
   options?: {

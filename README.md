@@ -5,7 +5,8 @@ A TypeScript-first event sourcing library with full type safety and flexible sto
 ## Features
 
 - **Type-Safe Event Sourcing**: Full TypeScript support with comprehensive type inference
-- **Multiple Schema Libraries**: Built-in support for Valibot, with Zod, Typebox, and ArkType coming soon
+- **Standard Schema Support**: Built on [Standard Schema](https://standardschema.dev) specification for maximum flexibility
+- **Multiple Validation Libraries**: Official support for Valibot, with easy integration for Zod, Typebox, ArkType, and more
 - **Flexible Storage Adapters**: Connect to any database through a simple interface
 - **Event-Driven Architecture**: Capture all state changes as immutable events
 - **Time Travel**: Reconstruct entity state at any point in history
@@ -22,31 +23,31 @@ yarn add ventyd
 pnpm add ventyd
 ```
 
-### Installing Schema Libraries
+### Installing Validation Libraries
 
-Ventyd requires a schema validation library. Install the one you want to use:
+Ventyd is built on the [Standard Schema](https://standardschema.dev) specification. You can use any Standard Schema-compliant validation library:
 
 ```bash
-# Valibot (recommended)
+# Valibot (recommended, has built-in helper)
 npm install valibot
 
-# Coming soon: Zod, Typebox, ArkType
+# Or use any Standard Schema-compliant library directly
+npm install @standard-schema/spec
+npm install zod  # or arktype, typebox, etc.
 ```
 
 ## Quick Start
 
 ### 1. Define Your Schema
 
-Ventyd supports multiple schema validation libraries. Here we use Valibot (currently supported):
+Define your entity schema with events and state. This example uses Valibot:
 
 ```typescript
 import { defineSchema } from 'ventyd';
 import { valibot, v } from 'ventyd/valibot';
 
 const userSchema = defineSchema("user", {
-  // Use the valibot provider to define events and state
   schema: valibot({
-    // Define all possible events
     event: {
       created: v.object({
         nickname: v.string(),
@@ -61,7 +62,6 @@ const userSchema = defineSchema("user", {
       }),
       restored: v.object({}),
     },
-    // Define the entity state structure
     state: v.object({
       nickname: v.string(),
       email: v.pipe(v.string(), v.email()),
@@ -69,8 +69,7 @@ const userSchema = defineSchema("user", {
       deletedAt: v.optional(v.nullable(v.string())),
     }),
   }),
-  // Specify which event initializes the entity (use fully-qualified name)
-  initialEventName: "user:created",
+  initialEventName: "user:created", // Event that creates new entities
 });
 ```
 
@@ -118,13 +117,12 @@ const userReducer = defineReducer(userSchema, (prevState, event) => {
 
 ### 3. Create Your Entity Class
 
-Extend the Entity base class and add business logic using the `mutation()` helper:
+Create an entity class with business logic:
 
 ```typescript
 import { Entity, mutation } from 'ventyd';
 
 class User extends Entity(userSchema, userReducer) {
-  // Getters for convenient access
   get nickname() {
     return this.state.nickname;
   }
@@ -133,7 +131,6 @@ class User extends Entity(userSchema, userReducer) {
     return this.state.deletedAt !== null;
   }
 
-  // Business methods with validation using mutation helper
   updateProfile = mutation(this, (dispatch, updates: { nickname?: string; bio?: string }) => {
     if (this.isDeleted) {
       throw new Error("Cannot update profile of deleted user");
@@ -157,46 +154,33 @@ class User extends Entity(userSchema, userReducer) {
 }
 ```
 
-### 4. Set Up Adapter and Repository
+### 4. Set Up Repository
 
-Create an adapter implementation and configure your repository:
+Create a repository with an adapter:
 
 ```typescript
 import { createRepository } from 'ventyd';
-import type { Adapter, Plugin } from 'ventyd';
+import type { Adapter } from 'ventyd';
 
-// Create in-memory adapter for development
+// In-memory adapter for development
 const createInMemoryAdapter = (): Adapter => {
   const eventStore: any[] = [];
 
   return {
     async getEventsByEntityId({ entityName, entityId }) {
-      // Implementation for retrieving events
       return eventStore.filter(e =>
         e.entityName === entityName &&
         e.entityId === entityId
       );
     },
     async commitEvents({ events }) {
-      // Implementation for storing events
       eventStore.push(...events);
     }
   };
 };
 
-const adapter = createInMemoryAdapter();
-
-// Optional: Create plugins for side effects
-const analyticsPlugin: Plugin = {
-  async onCommitted({ events }) {
-    console.log(`Tracked ${events.length} events`);
-  }
-};
-
-// Create a repository for your entity
 const userRepository = createRepository(User, {
-  adapter,
-  plugins: [analyticsPlugin], // Optional
+  adapter: createInMemoryAdapter()
 });
 ```
 
@@ -281,64 +265,79 @@ Reducers are pure functions that compute state from events:
 
 ### Mutations
 
-Mutations are entity methods that dispatch events to change state. Ventyd provides the `mutation()` helper to create mutation methods:
+Mutations are entity methods that dispatch events to change state. Use the `mutation()` helper:
 
 ```typescript
 class User extends Entity(userSchema, userReducer) {
-  updateProfile = mutation(this, (dispatch, bio: string) => {
+  updateProfile = mutation(this, (dispatch, updates: { nickname?: string; bio?: string }) => {
     if (this.isDeleted) {
       throw new Error("Cannot update deleted user");
     }
-    dispatch("user:profile_updated", { bio });
+    dispatch("user:profile_updated", updates);
   });
 }
 ```
 
-**Key features:**
-- Automatically binds dispatch to the entity instance
-- Maintains access to `this` for entity state and getters
-- Marks methods as mutations for type-level tracking
-- Enables readonly entity enforcement
+The `mutation()` helper provides:
+- Automatic dispatch binding to the entity
+- Access to `this` for validation logic
+- Type-safe mutation tracking
+- Readonly entity enforcement
 
 ### Read-only Entities (CQRS)
 
-Entities loaded from existing state (via `Entity.load()`) are read-only and cannot dispatch new events:
+Entities loaded from existing state are read-only and cannot dispatch new events:
 
 ```typescript
-// Created entities are fully mutable
+// Created/hydrated entities can mutate
 const user = User.create({
   body: { nickname: "John", email: "john@example.com" }
 });
-user.updateProfile("Software Engineer"); // ✅ Works
+user.updateProfile({ bio: "Software Engineer" }); // ✅ Works
 
 // Loaded entities are read-only
 const loadedUser = User.load({
   entityId: "user-123",
   state: { nickname: "John", email: "john@example.com" }
 });
-loadedUser.updateProfile("..."); // ❌ Type error & runtime error
+loadedUser.updateProfile({ bio: "..." }); // ❌ Type error & runtime error
 ```
 
-This enforces the **Command-Query Responsibility Segregation (CQRS)** pattern:
-- **Commands** (write operations): Use entities created or hydrated from events
-- **Queries** (read operations): Use entities loaded from current state snapshots
+This enforces **Command-Query Responsibility Segregation (CQRS)**:
+- **Commands** (writes): Use entities created or hydrated from events
+- **Queries** (reads): Use entities loaded from state snapshots
 
-**Benefits:**
-- Prevents accidental mutations without event history
+Benefits:
+- Prevents mutations without event history
 - Separates write and read models
-- Ensures event sourcing integrity
+- Maintains event sourcing integrity
 
-## Supported Schema Libraries
+## Validation Library Support
 
-Ventyd provides official support for popular TypeScript validation libraries. Choose the one that best fits your project:
+Ventyd is built on the [Standard Schema](https://standardschema.dev) specification, which provides a unified interface for all validation libraries.
 
-### ✅ Valibot (Currently Supported)
+### Supported Libraries
+
+Any library that implements the Standard Schema specification works with Ventyd:
+
+| Library | Status | Usage |
+|---------|--------|-------|
+| **[Valibot](https://valibot.dev)** | ✅ Official Helper | `ventyd/valibot` |
+| **[Zod](https://zod.dev)** | 🔜 Coming Soon | Use `standard()` for now |
+| **[ArkType](https://arktype.io)** | 🔜 Coming Soon | Use `standard()` for now |
+| **[Typebox](https://github.com/sinclairzx81/typebox)** | 🔜 Coming Soon | Use `standard()` for now |
+
+**Note:** Any Standard Schema-compliant library can be used with the `standard()` provider. Official helpers provide automatic event namespacing and better ergonomics.
+
+### Using Valibot (Recommended)
+
+Ventyd provides an official helper for Valibot that automatically handles event namespacing and metadata:
 
 ```typescript
 import { defineSchema } from 'ventyd';
 import { valibot, v } from 'ventyd/valibot';
 
-const schema = defineSchema("product", {
+const productSchema = defineSchema("product", {
   schema: valibot({
     event: {
       created: v.object({
@@ -358,21 +357,90 @@ const schema = defineSchema("product", {
 });
 ```
 
-### 🚧 Coming Soon
+**Custom namespace separator**
 
-We're actively working on official support for these validation libraries:
+The default separator between entity name and event name is `":"` (e.g., `user:created`). You can customize it:
 
-- **Zod** - Most popular TypeScript validation library
-- **Typebox** - JSON Schema-based validation with excellent performance
-- **ArkType** - Next-generation TypeScript validation with 1:1 syntax
+```typescript
+const productSchema = defineSchema("product", {
+  schema: valibot({
+    event: {
+      created: v.object({ name: v.string() }),
+      updated: v.object({ price: v.number() })
+    },
+    state: v.object({ name: v.string(), price: v.number() }),
+    namespaceSeparator: "/" // Events become "product/created", "product/updated"
+  }),
+  initialEventName: "product/created" // Must match the separator
+});
+```
 
-Want to see support for another library? [Open an issue](https://github.com/tonyfromundefined/ventyd/issues) to let us know!
+### Using Other Libraries (Standard Schema Provider)
 
-## Storage Adapter Implementations
+For libraries without an official helper, use the `standard()` provider directly. This works with any Standard Schema-compliant library (Zod, ArkType, Typebox, etc.):
 
-### In-Memory Storage Adapter
+```typescript
+import { defineSchema } from 'ventyd';
+import { standard } from 'ventyd/standard';
+import * as v from 'valibot'; // or zod, arktype, etc.
 
-Perfect for development and testing:
+const userSchema = defineSchema("user", {
+  schema: standard({
+    event: {
+      "user:created": v.object({
+        eventId: v.string(),
+        eventName: v.literal("user:created"),
+        eventCreatedAt: v.string(),
+        entityName: v.string(),
+        entityId: v.string(),
+        body: v.object({
+          email: v.pipe(v.string(), v.email())
+        })
+      }),
+      "user:updated": v.object({
+        eventId: v.string(),
+        eventName: v.literal("user:updated"),
+        eventCreatedAt: v.string(),
+        entityName: v.string(),
+        entityId: v.string(),
+        body: v.object({
+          nickname: v.string()
+        })
+      })
+    },
+    state: v.object({
+      email: v.string(),
+      nickname: v.optional(v.string())
+    })
+  }),
+  initialEventName: "user:created"
+});
+```
+
+**Important:** When using `standard()` directly, you must manually include all event metadata fields (`eventId`, `eventName`, `eventCreatedAt`, `entityName`, `entityId`, `body`) in your event schemas. Official helpers like `valibot()` add these automatically.
+
+Want an official helper for your favorite library? [Open an issue](https://github.com/tonyfromundefined/ventyd/issues) to let us know!
+
+## Storage Adapters
+
+Adapters connect Ventyd to your database. Implement the `Adapter` interface with two methods:
+
+### Adapter Interface
+
+```typescript
+interface Adapter {
+  getEventsByEntityId(params: {
+    entityName: string;
+    entityId: string;
+  }): Promise<Event[]>;
+
+  commitEvents(params: {
+    events: Event[];
+  }): Promise<void>;
+}
+```
+
+### In-Memory Adapter (Development)
 
 ```typescript
 import type { Adapter } from 'ventyd';
@@ -383,8 +451,7 @@ const createInMemoryAdapter = (): Adapter => {
   return {
     async getEventsByEntityId({ entityName, entityId }) {
       return events.filter(e =>
-        e.entityName === entityName &&
-        e.entityId === entityId
+        e.entityName === entityName && e.entityId === entityId
       );
     },
     async commitEvents({ events: newEvents }) {
@@ -392,13 +459,9 @@ const createInMemoryAdapter = (): Adapter => {
     }
   };
 };
-
-const adapter = createInMemoryAdapter();
 ```
 
-### MongoDB Storage Adapter
-
-For production deployments:
+### MongoDB Adapter (Production)
 
 ```typescript
 import type { Adapter } from 'ventyd';
@@ -407,25 +470,25 @@ import { MongoClient } from 'mongodb';
 const createMongoDBAdapter = (uri: string, dbName: string): Adapter => {
   const client = new MongoClient(uri);
   const db = client.db(dbName);
-  const eventsCollection = db.collection('events');
+  const collection = db.collection('events');
 
   return {
     async getEventsByEntityId({ entityName, entityId }) {
-      return eventsCollection
+      return collection
         .find({ entityName, entityId })
         .sort({ eventCreatedAt: 1 })
         .toArray();
     },
     async commitEvents({ events }) {
       if (events.length > 0) {
-        await eventsCollection.insertMany(events);
+        await collection.insertMany(events);
       }
     }
   };
 };
-
-const adapter = createMongoDBAdapter('mongodb://localhost:27017', 'myapp');
 ```
+
+**Tip:** Add indexes on `(entityName, entityId)` and `eventCreatedAt` for optimal query performance.
 
 ## Plugins
 
@@ -696,29 +759,23 @@ dispatch("order:updated", { items, address, status, ... });
 
 ### 3. Mutation Methods
 
-- Always use the `mutation()` helper for methods that dispatch events
-- Validate business rules before dispatching
-- Access entity state via `this` for validation logic
+Always use the `mutation()` helper and validate before dispatching:
 
 ```typescript
 import { Entity, mutation } from 'ventyd';
 
 class Order extends Entity(orderSchema, orderReducer) {
   ship = mutation(this, (dispatch, trackingNumber: string) => {
-    // Validate using entity state via this
+    // Validate business rules
     if (this.state.status !== "confirmed") {
-      throw new OrderNotConfirmedError(
-        `Order ${this.entityId} must be confirmed before shipping`
-      );
+      throw new Error("Order must be confirmed before shipping");
     }
 
     if (!trackingNumber) {
-      throw new InvalidTrackingNumberError(
-        "Tracking number is required for shipment"
-      );
+      throw new Error("Tracking number is required");
     }
 
-    // Safe to dispatch after validation
+    // Dispatch after validation
     dispatch("order:shipped", { trackingNumber });
   });
 }
@@ -726,10 +783,10 @@ class Order extends Entity(orderSchema, orderReducer) {
 
 ### 4. Error Handling
 
-- Validate business rules before dispatching events
-- Use domain-specific exceptions
+- Validate business rules before dispatching
+- Use descriptive error messages
 - Never modify state directly
-- Mutation methods automatically enforce readonly constraints
+- Let mutation helper enforce readonly constraints
 
 ## License
 

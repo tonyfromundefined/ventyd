@@ -11,7 +11,6 @@ const defaultGenerateId = () => crypto.randomUUID();
  * @param options.schema - Schema provider function (e.g., `valibot()`) that provides validation
  * @param options.initialEventName - The fully-qualified event name that creates new entities (e.g., "user:created")
  * @param options.generateId - Optional custom ID generator function (defaults to crypto.randomUUID)
- * @param options.namespaceSeparator - Optional custom separator between entity name and event name (default: ":")
  *
  * @returns A fully-typed schema object for use with Entity and Repository
  *
@@ -64,14 +63,12 @@ const defaultGenerateId = () => crypto.randomUUID();
  *   // Specify which event creates new entities (use fully-qualified name)
  *   initialEventName: "user:created",
  *   // Optional: Custom ID generator
- *   generateId: () => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
- *   // Optional: Custom namespace separator (default is ":")
- *   namespaceSeparator: ":" // or ".", "/", etc.
+ *   generateId: () => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
  * });
  * ```
  *
  * @example
- * Using a custom separator:
+ * Using a custom namespace separator:
  * ```typescript
  * import { defineSchema } from 'ventyd';
  * import { valibot, v } from 'ventyd/valibot';
@@ -82,10 +79,10 @@ const defaultGenerateId = () => crypto.randomUUID();
  *       created: v.object({ name: v.string(), price: v.number() }),
  *       updated: v.object({ price: v.number() })
  *     },
- *     state: v.object({ name: v.string(), price: v.number() })
+ *     state: v.object({ name: v.string(), price: v.number() }),
+ *     namespaceSeparator: "/" // Events will be "product/created", "product/updated"
  *   }),
- *   initialEventName: "product/created", // Note: use "/" separator
- *   namespaceSeparator: "/" // Events will be "product/created", "product/updated"
+ *   initialEventName: "product/created" // Note: use "/" separator to match
  * });
  * ```
  */
@@ -94,34 +91,18 @@ export function defineSchema<
   $$EventType extends BaseEventType,
   $$StateType,
   $$InitialEventName extends $$EventType["eventName"],
-  $$NamespaceSeparator extends string = ":",
 >(
   entityName: $$EntityName,
   options: {
-    schema: SchemaInput<
-      $$EntityName,
-      $$EventType,
-      $$StateType,
-      $$NamespaceSeparator
-    >;
+    schema: SchemaInput<$$EntityName, $$EventType, $$StateType>;
     initialEventName: $$InitialEventName;
     generateId?: () => string;
-    namespaceSeparator?: $$NamespaceSeparator;
   },
-): Schema<
-  $$EntityName,
-  $$EventType,
-  $$StateType,
-  $$InitialEventName,
-  $$NamespaceSeparator
-> {
-  const namespaceSeparator =
-    options.namespaceSeparator ?? (":" as $$NamespaceSeparator);
+): Schema<$$EntityName, $$EventType, $$StateType, $$InitialEventName> {
   const generateId = options.generateId ?? defaultGenerateId;
 
   const { parseEvent, parseEventByName, parseState } = options.schema({
     entityName,
-    namespaceSeparator,
   });
 
   return {
@@ -131,6 +112,5 @@ export function defineSchema<
     " $$entityName": entityName,
     " $$initialEventName": options.initialEventName,
     " $$generateId": generateId,
-    " $$namespaceSeparator": namespaceSeparator,
   };
 }

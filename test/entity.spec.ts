@@ -627,9 +627,9 @@ describe("Entity Unit Tests", () => {
             updated: v.object({ name: v.string() }),
           },
           state: v.object({ name: v.string() }),
+          namespaceSeparator: "/",
         }),
         initialEventName: "product/created",
-        namespaceSeparator: "/",
       });
 
       const reducer = defineReducer(schema, (prevState, event) => {
@@ -672,9 +672,9 @@ describe("Entity Unit Tests", () => {
             status: v.string(),
             trackingNumber: v.optional(v.string()),
           }),
+          namespaceSeparator: ".",
         }),
         initialEventName: "order.created",
-        namespaceSeparator: ".",
       });
 
       const reducer = defineReducer(schema, (prevState, event) => {
