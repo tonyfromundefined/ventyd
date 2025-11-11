@@ -1,4 +1,5 @@
 export * from "./Adapter";
+export * from "./BaseEventType";
 export * from "./ConstructorReturnType";
 export * from "./Entity";
 export * from "./EntityConstructor";

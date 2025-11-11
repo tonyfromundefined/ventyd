@@ -1,6 +1,5 @@
 export type ConstructorReturnType<T> = T extends new (
-  // biome-ignore lint/suspicious/noExplicitAny: biome is dumb
-  ...args: any[]
+  ...args: never[]
 ) => infer U
   ? U
   : never;

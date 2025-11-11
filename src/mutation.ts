@@ -45,14 +45,9 @@ import type { MutationMethod } from "./types/MutationMethod";
  * @see {@link MutationMethod} - The return type that marks methods as mutations
  * @see {@link ReadonlyEntity} - Type that excludes mutation methods from loaded entities
  */
-export function mutation<
-  // biome-ignore lint/suspicious/noExplicitAny: extends any entity
-  $$Entity extends Entity<any>,
-  $$Args extends unknown[],
-  $$Return,
->(
-  self: $$Entity,
-  fn: (dispatch: $$Entity[" $$dispatch"], ...args: $$Args) => $$Return,
+export function mutation<$$Schema, $$Args extends unknown[], $$Return>(
+  self: Entity<$$Schema>,
+  fn: (dispatch: Entity<$$Schema>[" $$dispatch"], ...args: $$Args) => $$Return,
 ): MutationMethod<(...args: $$Args) => $$Return> {
   const f: MutationMethod<(...args: $$Args) => $$Return> = (...args) => {
     return fn(self[" $$dispatch"].bind(self), ...args);

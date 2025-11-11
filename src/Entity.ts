@@ -78,13 +78,9 @@ export function Entity<
   type $$Event = InferEventFromSchema<$$Schema>;
   type $$InitialEventName = InferInitialEventNameFromSchema<$$Schema>;
 
-  // parse schema
-  // biome-ignore lint/suspicious/noExplicitAny: schema is valid
-  const _schema: any = schema;
-
-  const entityName: $$EntityName = _schema[" $$entityName"];
-  const initialEventName: $$InitialEventName = _schema[" $$initialEventName"];
-  const generateId: () => string = _schema[" $$generateId"];
+  const entityName = schema[" $$entityName"] as $$EntityName;
+  const initialEventName = schema[" $$initialEventName"] as $$InitialEventName;
+  const generateId = schema[" $$generateId"] as () => string;
 
   // options
   const maxQueuedEvents = options?.maxQueuedEvents ?? 10000; // Default to 10000 events
