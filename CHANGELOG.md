@@ -1,5 +1,12 @@
 # ventyd
 
+## 1.9.0
+
+### Minor Changes
+
+- 4ebb477: feat: support typebox
+- f20c92a: feat: support zod, arktype
+
 ## 1.8.0
 
 ### Minor Changes
